@@ -196,7 +196,7 @@ def write_c16_file(f, images, pixel_fmt="RGB565"):
                         run_length += 1
                     output_position += 2 + run_length * 2
                     write_u16le(compressed, (run_length << 1) | 1)
-                    write_u16le_many(
+                    write_many_u16le(
                         compressed,
                         data[img.width * j + (p - run_length) : img.width * j + p],
                     )

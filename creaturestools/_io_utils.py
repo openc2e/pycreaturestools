@@ -27,7 +27,7 @@ def write_u16le(f, value):
     write_all(f, struct.pack("<H", value))
 
 
-def write_u16le_many(f, values):
+def write_many_u16le(f, values):
     write_all(f, struct.pack("<" + "H" * len(values), *values))
 
 
