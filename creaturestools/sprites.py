@@ -259,36 +259,91 @@ def read_spr_file(f):
         heights.append(read_u16le(f))
         next_offset += widths[-1] * heights[-1]
 
-    images = []
-    for i in range(num_images):
-        data = read_exact(f, widths[i] * heights[i])
+    if (
+        num_images == 464
+        and all(_ == 144 for _ in widths)
+        and all(_ == 150 for _ in heights)
+    ):
+        # this is a background, not a normal sprite file
+        width_blocks = 58
+        height_blocks = 8
+        totalwidth = 8352
+        totalheight = 1200
+
+        data = bytearray(totalwidth * totalheight)
+        for i in range(num_images):
+            y = i % height_blocks
+            x = i // height_blocks
+            for blocky in range(150):
+                start = (y * 150 + blocky) * totalwidth + x * 144
+                data[start : start + 144] = read_exact(f, 144)
+
         image = Image.frombytes(
             "P",
-            (widths[i], heights[i]),
-            data,
+            (totalwidth, totalheight),
+            bytes(data),
         )
-        # TODO: are all blacks transparent? or just palette index 0?
         image.putpalette(CREATURES1_PALETTE)
-        images.append(image)
+        return [image]
+    else:
+        images = []
+        for i in range(num_images):
+            data = read_exact(f, widths[i] * heights[i])
+            image = Image.frombytes(
+                "P",
+                (widths[i], heights[i]),
+                data,
+            )
+            # TODO: are all blacks transparent? or just palette index 0?
+            image.putpalette(CREATURES1_PALETTE)
+            images.append(image)
 
-    return images
+        return images
 
 
 def write_spr_file(f, images):
-    write_u16le(f, len(images))
-
-    next_offset = 2 + 8 * len(images)
-    for img in images:
-        write_u32le(f, next_offset)
-        write_u16le(f, img.width)
-        write_u16le(f, img.height)
-        next_offset += img.width + img.height
-
     palette_image = Image.new("P", (1, 1))
     palette_image.putpalette(CREATURES1_PALETTE)
 
-    for img in images:
-        write_all(f, img.convert("RGB").quantize(palette=palette_image).tobytes())
+    images = [
+        img.convert("RGB").quantize(palette=palette_image)
+        if img.getpalette() != CREATURES1_PALETTE
+        else img
+        for img in images
+    ]
+
+    if len(images) == 1 and images[0].width == 8352 and images[0].height == 1200:
+        # this is a background, not a normal sprite file
+        img = images[0]
+        num_images = 464
+        width_blocks = 58
+        height_blocks = 8
+        sprwidth = 144
+        sprheight = 150
+        write_u16le(f, num_images)
+        for i in range(num_images):
+            write_u32le(f, 2 + 8 * num_images + sprwidth * sprheight * i)  # offset
+            write_u16le(f, sprwidth)  # width
+            write_u16le(f, sprheight)  # height
+
+        data = img.tobytes()
+        for i in range(num_images):
+            y = i % height_blocks
+            x = i // height_blocks
+            for blocky in range(sprheight):
+                start = (y * sprheight + blocky) * img.width + x * sprwidth
+                write_all(f, data[start : start + sprwidth])
+    else:
+        write_u16le(f, len(images))
+        next_offset = 2 + 8 * len(images)
+        for img in images:
+            write_u32le(f, next_offset)
+            write_u16le(f, img.width)
+            write_u16le(f, img.height)
+            next_offset += img.width + img.height
+
+        for img in images:
+            write_all(f, img.tobytes())
 
 
 def write_s16_file(f, images, pixel_fmt="RGB565"):
@@ -394,9 +449,8 @@ def write_blk_file(f, image, pixel_fmt="RGB565"):
     num_images = width_blocks * height_blocks
     write_u16le(f, num_images)
 
-    next_offset = 10 + 8 * num_images
-    for _ in range(num_images):
-        write_u32le(f, next_offset - 4)
+    for i in range(num_images):
+        write_u32le(f, 10 + 8 * num_images + i * 128 * 128 * 2 - 4)  # offset
         write_u16le(f, 128)  # width
         write_u16le(f, 128)  # height
 
