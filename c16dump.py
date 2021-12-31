@@ -11,6 +11,8 @@ def main():
             images = creaturestools.sprites.read_c16_file(f)
         elif input_filename.lower().endswith(".s16"):
             images = creaturestools.sprites.read_s16_file(f)
+        elif input_filename.lower().endswith(".blk"):
+            images = [creaturestools.sprites.read_blk_file(f)]
         else:
             raise Exception(
                 "Don't know how to open filename '{}'".format(input_filename)

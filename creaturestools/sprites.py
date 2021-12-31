@@ -132,6 +132,69 @@ def read_c16_file(f):
         images.append(image)
 
 
+def read_blk_file(f):
+    pixel_fmt = read_u32le(f)
+    if pixel_fmt == 0:
+        rawmode = "BGR;15"
+    elif pixel_fmt == 1:
+        rawmode = "BGR;16"
+    elif pixel_fmt == 0x1000000:
+        raise NotImplementedError("Pixel format 0x1000000 (big-endian BLK)")
+    else:
+        desc = "Expected pixel format to be 0x0 (RGB555) or 0x1 (RGB565), but got 0x{:x}".format(
+            pixel_fmt
+        )
+        raise ReadError(desc)
+
+    width_blocks = read_u16le(f)
+    height_blocks = read_u16le(f)
+    num_images = read_u16le(f)
+
+    if num_images != width_blocks * height_blocks:
+        raise ReadError(
+            "Expected {} x {} = {} sprites, but got {}".format(
+                width_blocks, height_blocks, width_blocks * height_blocks, num_images
+            )
+        )
+
+    offsets = []
+    next_offset = 10 + 8 * num_images
+    for _ in range(num_images):
+        offsets.append(read_u32le(f) + 4)
+        if offsets[-1] != next_offset:
+            raise ReadError(
+                "Expected image offset to be {}, but got {}".format(
+                    next_offset, offsets[i]
+                )
+            )
+        width = read_u16le(f)
+        height = read_u16le(f)
+        if width != 128 or height != 128:
+            raise ReadError(
+                "Expected image size to be 128x128, but got {}x{}".format(width, height)
+            )
+        next_offset += 2 * 128 * 128
+
+    totalwidth = width_blocks * 128
+    totalheight = height_blocks * 128
+
+    data = bytearray(totalwidth * totalheight * 2)
+    for i in range(num_images):
+        y = i % height_blocks
+        x = i // height_blocks
+        for blocky in range(128):
+            start = (y * 128 + blocky) * totalwidth * 2 + x * 128 * 2
+            data[start : start + 128 * 2] = read_exact(f, 128 * 2)
+
+    return Image.frombytes(
+        "RGB",
+        (totalwidth, totalheight),
+        bytes(data),
+        "raw",
+        rawmode,
+    )
+
+
 def write_s16_file(f, images, pixel_fmt="RGB565"):
     if pixel_fmt == "RGB555":
         rawmode = "BGR;15"
@@ -208,3 +271,44 @@ def write_c16_file(f, images, pixel_fmt="RGB565"):
 
     for compressed in compressed_data:
         write_all(f, compressed)
+
+
+def write_blk_file(f, image, pixel_fmt="RGB565"):
+    if image.width % 128 != 0 or image.height % 128 != 0:
+        raise ValueError(
+            "Expected image size to be evenly divisible by 128x128, but got {}x{}".format(
+                image.width, image.height
+            )
+        )
+
+    width_blocks = image.width // 128
+    height_blocks = image.height // 128
+
+    if pixel_fmt == "RGB555":
+        rawmode = "BGR;15"
+        write_u32le(f, 0)
+    elif pixel_fmt == "RGB565":
+        rawmode = "BGR;16"
+        write_u32le(f, 1)
+    else:
+        raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
+
+    write_u16le(f, width_blocks)
+    write_u16le(f, height_blocks)
+    num_images = width_blocks * height_blocks
+    write_u16le(f, num_images)
+
+    next_offset = 10 + 8 * num_images
+    for _ in range(num_images):
+        write_u32le(f, next_offset - 4)
+        write_u16le(f, 128)  # width
+        write_u16le(f, 128)  # height
+
+    data = image.convert(rawmode).tobytes()
+
+    for i in range(num_images):
+        y = i % height_blocks
+        x = i // height_blocks
+        for blocky in range(128):
+            start = (y * 128 + blocky) * image.width * 2 + x * 128 * 2
+            write_all(f, data[start : start + 128 * 2])
