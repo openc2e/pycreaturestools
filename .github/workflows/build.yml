@@ -1,0 +1,19 @@
+name: build
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Check out source"
+      uses: actions/checkout@v2
+    - name: "Install black"
+      run: "pip install black"
+    - name: "lint.sh"
+      run: "./lint.sh"
+
