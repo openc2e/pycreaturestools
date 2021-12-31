@@ -10,7 +10,7 @@ def main():
         if input_filename.lower().endswith(".c16"):
             images = creaturestools.sprites.read_c16_file(f)
         elif input_filename.lower().endswith(".s16"):
-            images = creaturestools.sprites.read_c16_file(f)
+            images = creaturestools.sprites.read_s16_file(f)
         else:
             raise Exception(
                 "Don't know how to open filename '{}'".format(input_filename)
