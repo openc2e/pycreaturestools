@@ -6,3 +6,4 @@ __pycache__
 *.s16
 *.c16
 *.png
+.DS_Store
