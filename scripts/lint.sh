@@ -7,7 +7,5 @@ if ! [ -x "$(command -v black)" ]; then
   exit 1
 fi
 
-whereami="$(dirname "$0")"
-
-echo black "$whereami"/**/*.py
-black "$whereami"/**/*.py
+topdir="$(dirname "$0")/.."
+black "$topdir"

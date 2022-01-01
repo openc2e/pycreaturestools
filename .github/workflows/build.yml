@@ -15,5 +15,7 @@ jobs:
     - name: "Install black"
       run: "pip install black"
     - name: "lint.sh"
-      run: "./lint.sh"
+      run: "./scripts/lint.sh"
+    - name: "git diff"
+      run: "git diff --exit-code"
 
