@@ -92,18 +92,46 @@ def read_s16_file(f):
         heights.append(read_u16le(f))
         next_offset += 2 * widths[-1] * heights[-1]
 
-    images = []
-    for i in range(num_images):
+    if (
+        num_images == 928
+        and all(_ == 144 for _ in widths)
+        and all(_ == 150 for _ in heights)
+    ):
+        # this is a background, not a normal sprite file
+        width_blocks = 58
+        height_blocks = 16
+        totalwidth = 8352
+        totalheight = 2400
+
+        data = bytearray(totalwidth * totalheight * 2)
+        for i in range(num_images):
+            y = i % height_blocks
+            x = i // height_blocks
+            for blocky in range(150):
+                start = (y * 150 + blocky) * totalwidth * 2 + x * 144 * 2
+                data[start : start + 144 * 2] = read_exact(f, 144 * 2)
+
         image = Image.frombytes(
             "RGB",
-            (widths[i], heights[i]),
-            read_exact(f, 2 * widths[i] * heights[i]),
+            (totalwidth, totalheight),
+            bytes(data),
             "raw",
             rawmode,
         )
-        images.append(image)
+        return [image]
+    else:
+        images = []
+        for i in range(num_images):
+            image = Image.frombytes(
+                "RGB",
+                (widths[i], heights[i]),
+                read_exact(f, 2 * widths[i] * heights[i]),
+                "raw",
+                rawmode,
+            )
+            images.append(image)
 
-    return images
+        return images
 
 
 def read_c16_file(f):
@@ -356,16 +384,38 @@ def write_s16_file(f, images, pixel_fmt="RGB565"):
     else:
         raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
 
-    write_u16le(f, len(images))
-    next_offset = 6 + 8 * len(images)
-    for img in images:
-        write_u32le(f, next_offset)
-        write_u16le(f, img.width)
-        write_u16le(f, img.height)
-        next_offset += 2 * img.width * img.height
+    if len(images) == 1 and images[0].width == 8352 and images[0].height == 2400:
+        # this is a background, not a normal sprite file
+        img = images[0]
+        num_images = 928
+        width_blocks = 58
+        height_blocks = 16
+        sprwidth = 144
+        sprheight = 150
+        write_u16le(f, num_images)
+        for i in range(num_images):
+            write_u32le(f, 2 + 8 * num_images + sprwidth * sprheight * 2 * i)  # offset
+            write_u16le(f, sprwidth)  # width
+            write_u16le(f, sprheight)  # height
 
-    for img in images:
-        write_all(f, img.convert(rawmode).tobytes())
+        data = img.convert(rawmode).tobytes()
+        for i in range(num_images):
+            y = i % height_blocks
+            x = i // height_blocks
+            for blocky in range(sprheight):
+                start = (y * sprheight + blocky) * img.width * 2 + x * sprwidth * 2
+                write_all(f, data[start : start + sprwidth * 2])
+    else:
+        write_u16le(f, len(images))
+        next_offset = 6 + 8 * len(images)
+        for img in images:
+            write_u32le(f, next_offset)
+            write_u16le(f, img.width)
+            write_u16le(f, img.height)
+            next_offset += 2 * img.width * img.height
+
+        for img in images:
+            write_all(f, img.convert(rawmode).tobytes())
 
 
 def write_c16_file(f, images, pixel_fmt="RGB565"):
