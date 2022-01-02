@@ -367,7 +367,7 @@ def write_spr_file(f, images):
             write_u32le(f, next_offset)
             write_u16le(f, img.width)
             write_u16le(f, img.height)
-            next_offset += img.width + img.height
+            next_offset += img.width * img.height
 
         for img in images:
             write_all(f, img.tobytes())
