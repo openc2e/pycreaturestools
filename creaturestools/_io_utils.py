@@ -22,6 +22,10 @@ def read_exact(f, n):
     return result
 
 
+def read_u8(f):
+    return struct.unpack("B", read_exact(f, 1))[0]
+
+
 def read_u16le(f):
     return struct.unpack("<H", read_exact(f, 2))[0]
 
