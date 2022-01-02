@@ -4,10 +4,10 @@ import random
 import struct
 import unittest
 
+from PIL import Image
+
 import creaturestools.sprites
 from creaturestools._image_utils import convert_image
-
-from PIL import Image
 
 
 def generate_random_image(size):

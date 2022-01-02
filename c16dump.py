@@ -1,6 +1,8 @@
 import sys
-import creaturestools.sprites
+
 from PIL import Image
+
+import creaturestools.sprites
 
 
 def main():

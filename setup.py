@@ -13,6 +13,7 @@ setup(
     extras_require={
         "dev": [
             "black",
+            "isort>=5",
         ],
         "test": [],
     },

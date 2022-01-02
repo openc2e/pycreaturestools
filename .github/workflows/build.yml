@@ -12,8 +12,8 @@ jobs:
     steps:
     - name: "Check out source"
       uses: actions/checkout@v2
-    - name: "Install black"
-      run: "pip install black"
+    - name: "Install dependencies"
+      run: "pip install .[dev]"
     - name: "lint.sh"
       run: "./scripts/lint.sh"
     - name: "git diff"

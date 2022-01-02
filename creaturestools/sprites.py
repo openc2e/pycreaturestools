@@ -1,7 +1,8 @@
-from PIL import Image
 import array
-import struct
 import io
+import struct
+
+from PIL import Image
 
 from ._image_utils import *
 from ._io_utils import *
