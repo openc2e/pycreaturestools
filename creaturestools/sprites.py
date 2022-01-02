@@ -76,17 +76,14 @@ def read_s16_file(f):
         raise ReadError(desc)
 
     num_images = read_u16le(f)
-    offsets = []
     widths = []
     heights = []
     next_offset = 6 + (8 * num_images)
     for _ in range(num_images):
-        offsets.append(read_u32le(f))
-        if offsets[-1] != next_offset:
+        offset = read_u32le(f)
+        if offset != next_offset:
             raise ReadError(
-                "Expected image offset to be {}, but got {}".format(
-                    next_offset, offsets[i]
-                )
+                "Expected image offset to be {}, but got {}".format(next_offset, offset)
             )
         widths.append(read_u16le(f))
         heights.append(read_u16le(f))
