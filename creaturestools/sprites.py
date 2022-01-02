@@ -393,7 +393,7 @@ def write_s16_file(f, images, pixel_fmt="RGB565"):
         sprheight = 150
         write_u16le(f, num_images)
         for i in range(num_images):
-            write_u32le(f, 2 + 8 * num_images + sprwidth * sprheight * 2 * i)  # offset
+            write_u32le(f, 6 + 8 * num_images + sprwidth * sprheight * 2 * i)  # offset
             write_u16le(f, sprwidth)  # width
             write_u16le(f, sprheight)  # height
 
