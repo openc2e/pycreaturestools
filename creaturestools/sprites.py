@@ -126,6 +126,7 @@ def read_s16_file(f):
                 "raw",
                 rawmode,
             )
+            image.info["rawmode"] = rawmode
             images.append(image)
 
         return images
@@ -202,6 +203,7 @@ def read_c16_file(f):
         image = Image.frombytes(
             "RGB", (widths[i], heights[i]), bytes(data), "raw", rawmode
         )
+        image.info["rawmode"] = rawmode
         images.append(image)
 
     return images
@@ -261,13 +263,15 @@ def read_blk_file(f):
             start = (y * 128 + blocky) * totalwidth * 2 + x * 128 * 2
             data[start : start + 128 * 2] = read_exact(f, 128 * 2)
 
-    return Image.frombytes(
+    image = Image.frombytes(
         "RGB",
         (totalwidth, totalheight),
         bytes(data),
         "raw",
         rawmode,
     )
+    image.info["rawmode"] = rawmode
+    return image
 
 
 def read_spr_file(f):
