@@ -204,6 +204,8 @@ def read_c16_file(f):
         )
         images.append(image)
 
+    return images
+
 
 def read_blk_file(f):
     pixel_fmt = read_u32le(f)
