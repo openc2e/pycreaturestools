@@ -76,10 +76,10 @@ def read_cob1_file(fname_or_stream):
 
         cob1.object_scripts = []
         for _ in range(num_object_scripts):
-            cob1.object_scripts.append(_read_cstring(f).decode("ascii"))
+            cob1.object_scripts.append(read_cstring(f).decode("ascii"))
         cob1.install_scripts = []
         for _ in range(num_install_scripts):
-            cob1.install_scripts.append(_read_cstring(f).decode("ascii"))
+            cob1.install_scripts.append(read_cstring(f).decode("ascii"))
         # TODO: check for japanese?
 
         sprite_storage_width = read_u32le(f)
@@ -101,8 +101,8 @@ def read_cob1_file(fname_or_stream):
             sprite.putpalette(CREATURES1_PALETTE)
             cob1.sprite = ImageOps.flip(sprite)
 
-        cob1.name = _decode_c1_string(_read_cstring(f))
-        cob1.description = _decode_c1_string(_read_cstring(f))
+        cob1.name = _decode_c1_string(read_cstring(f))
+        cob1.description = _decode_c1_string(read_cstring(f))
         # TODO: check for japanese?
 
         return cob1
