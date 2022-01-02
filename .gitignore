@@ -7,3 +7,4 @@ __pycache__
 *.c16
 *.png
 .DS_Store
+.virtualenv
