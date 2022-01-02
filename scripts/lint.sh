@@ -13,5 +13,5 @@ fi
 
 cd "$(dirname "$0")/.."
 files=$(find * -name '*.py')
-isort --profile black --float-to-top $files
+isort $files
 black $files
