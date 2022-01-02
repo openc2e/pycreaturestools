@@ -42,3 +42,28 @@ Available tools:
 - spritedumper: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
 - szdd_dumper: Decompresses files compressed on old versions of MS-DOS
 - translate_voice: Converts a string of text into Creatures sounds
+
+## Library API
+
+**creaturestools.agents**
+- `read_cob1_file(fname_or_stream) -> creaturestools.agents.Cob1File`
+
+**creaturestools.caos**
+- `format_c1_caos(str) -> str`
+
+**creaturestools.genetics**
+- `read_gen3_file(fname_or_stream) -> List[creaturestools.genetics.Gene]`
+- `svrule3_from_bytes(bytes[48]) -> List[str]`
+- `SVRULE3_OPCODES: Mapping[int, str]`
+- `SVRULE3_OPERAND_TYPES: Mapping[int, str]`
+
+**creaturestools.sprites**
+- `read_spr_file(fname_or_stream) -> List[PIL.Image]`
+- `read_s16_file(fname_or_stream) -> List[PIL.Image]`
+- `read_c16_file(fname_or_stream) -> List[PIL.Image]`
+- `read_blk_file(fname_or_stream) -> PIL.Image`
+- `write_s16_file(fname_or_stream, List[PIL.Image])`
+- `write_c16_file(fname_or_stream, List[PIL.Image])`
+- `write_spr_file(fname_or_stream, List[PIL.Image])`
+- `write_blk_file(fname_or_stream, PIL.Image)`
+- `CREATURES1_PALETTE: int[256 * 3]`
