@@ -1,4 +1,18 @@
 import struct
+from contextlib import contextmanager
+
+
+@contextmanager
+def _nullcontext(enter_result):
+    # For Python 3.7, use contextlib._nullcontext
+    yield enter_result
+
+
+def open_if_not_stream(f, mode):
+    if isinstance(f, (str, bytes)):
+        return open(f, mode)
+    else:
+        return _nullcontext(f)
 
 
 def read_exact(f, n):

@@ -57,58 +57,229 @@ CREATURES1_PALETTE = [
 ]
 
 
-def read_s16_file(f):
-    pixel_fmt = read_u32le(f)
-    if pixel_fmt == 0:
-        rawmode = "BGR;15"
-    elif pixel_fmt == 1:
-        rawmode = "BGR;16"
-    else:
-        desc = "Expected pixel format to be 0x0 (RGB555) or 0x1 (RGB565), but got 0x{:x}".format(
-            pixel_fmt
-        )
-        if pixel_fmt == 2:
-            desc += " (C16 RGB555)"
-        elif pixel_fmt == 3:
-            desc += " (C16 RGB565)"
-        elif pixel_fmt == 0x1000000:
-            desc += " (big-endian N16)"
-        elif pixel_fmt == 0x3000000:
-            desc += " (big-endian M16)"
-        raise ReadError(desc)
-
-    num_images = read_u16le(f)
-    widths = []
-    heights = []
-    next_offset = 6 + (8 * num_images)
-    for _ in range(num_images):
-        offset = read_u32le(f)
-        if offset != next_offset:
-            raise ReadError(
-                "Expected image offset to be {}, but got {}".format(next_offset, offset)
+def read_s16_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        pixel_fmt = read_u32le(f)
+        if pixel_fmt == 0:
+            rawmode = "BGR;15"
+        elif pixel_fmt == 1:
+            rawmode = "BGR;16"
+        else:
+            desc = "Expected pixel format to be 0x0 (RGB555) or 0x1 (RGB565), but got 0x{:x}".format(
+                pixel_fmt
             )
-        widths.append(read_u16le(f))
-        heights.append(read_u16le(f))
-        next_offset += 2 * widths[-1] * heights[-1]
+            if pixel_fmt == 2:
+                desc += " (C16 RGB555)"
+            elif pixel_fmt == 3:
+                desc += " (C16 RGB565)"
+            elif pixel_fmt == 0x1000000:
+                desc += " (big-endian N16)"
+            elif pixel_fmt == 0x3000000:
+                desc += " (big-endian M16)"
+            raise ReadError(desc)
 
-    if (
-        num_images == 928
-        and all(_ == 144 for _ in widths)
-        and all(_ == 150 for _ in heights)
-    ):
-        # this is a background, not a normal sprite file
-        width_blocks = 58
-        height_blocks = 16
-        totalwidth = 8352
-        totalheight = 2400
+        num_images = read_u16le(f)
+        widths = []
+        heights = []
+        next_offset = 6 + (8 * num_images)
+        for _ in range(num_images):
+            offset = read_u32le(f)
+            if offset != next_offset:
+                raise ReadError(
+                    "Expected image offset to be {}, but got {}".format(
+                        next_offset, offset
+                    )
+                )
+            widths.append(read_u16le(f))
+            heights.append(read_u16le(f))
+            next_offset += 2 * widths[-1] * heights[-1]
+
+        if (
+            num_images == 928
+            and all(_ == 144 for _ in widths)
+            and all(_ == 150 for _ in heights)
+        ):
+            # this is a background, not a normal sprite file
+            width_blocks = 58
+            height_blocks = 16
+            totalwidth = 8352
+            totalheight = 2400
+
+            data = bytearray(totalwidth * totalheight * 2)
+            for i in range(num_images):
+                y = i % height_blocks
+                x = i // height_blocks
+                for blocky in range(150):
+                    start = (y * 150 + blocky) * totalwidth * 2 + x * 144 * 2
+                    data[start : start + 144 * 2] = read_exact(f, 144 * 2)
+
+            image = Image.frombytes(
+                "RGB",
+                (totalwidth, totalheight),
+                bytes(data),
+                "raw",
+                rawmode,
+            )
+            return [image]
+        else:
+            images = []
+            for i in range(num_images):
+                image = Image.frombytes(
+                    "RGB",
+                    (widths[i], heights[i]),
+                    read_exact(f, 2 * widths[i] * heights[i]),
+                    "raw",
+                    rawmode,
+                )
+                image.info["rawmode"] = rawmode
+                images.append(image)
+
+            return images
+
+
+def read_c16_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        pixel_fmt = read_u32le(f)
+        if pixel_fmt == 2:
+            rawmode = "BGR;15"
+        elif pixel_fmt == 3:
+            rawmode = "BGR;16"
+        elif pixel_fmt == 0x3000000:
+            raise NotImplementedError("Pixel format 0x3000000 (big-endian M16)")
+        else:
+            desc = "Expected pixel format to be 0x2 (RGB555) or 0x3 (RGB565), but got 0x{:x}".format(
+                pixel_fmt
+            )
+            if pixel_fmt == 0:
+                desc += " (S16 RGB555)"
+            elif pixel_fmt == 1:
+                desc += " (S16 RGB565)"
+            elif pixel_fmt == 0x1000000:
+                desc += " (big-endian N16)"
+            raise ReadError(desc)
+
+        num_images = read_u16le(f)
+        offsets = []
+        widths = []
+        heights = []
+        for i in range(num_images):
+            line_offsets = [read_u32le(f)]
+            widths.append(read_u16le(f))
+            heights.append(read_u16le(f))
+            for j in range(heights[i] - 1):
+                line_offsets.append(read_u32le(f))
+            offsets.append(line_offsets)
+
+        images = []
+        for i in range(num_images):
+            # TODO: check offsets are correct
+            # TODO: use array module instead
+            data = bytearray(widths[i] * heights[i] * 2)
+            for j in range(heights[i]):
+                p = 0
+                while p < widths[i]:
+                    rle_tag = read_u16le(f)
+                    is_color = rle_tag & 0x1
+                    run_length = rle_tag >> 1
+                    if p + run_length > widths[i]:
+                        raise ReadError(
+                            "Got run_length {}, which would result in an overwide line of {}".format(
+                                run_length, p + run_length
+                            )
+                        )
+                    if is_color:
+                        data[
+                            (j * widths[i] + p)
+                            * 2 : (j * widths[i] + p + run_length)
+                            * 2
+                        ] = read_exact(f, run_length * 2)
+                    else:
+                        # bytearray() initializes memory to zero, so we don't need to do anything
+                        pass
+                    p += run_length
+
+                end_of_line = read_u16le(f)
+                if end_of_line != 0:
+                    raise ReadError(
+                        "Expected end-of-line byte to be 0, but got {}".format(
+                            end_of_line
+                        )
+                    )
+            end_of_image = read_u16le(f)
+            if end_of_image != 0:
+                raise ReadError(
+                    "Expected end-of-image byte to be 0, but got {}".format(
+                        end_of_image
+                    )
+                )
+            image = Image.frombytes(
+                "RGB", (widths[i], heights[i]), bytes(data), "raw", rawmode
+            )
+            image.info["rawmode"] = rawmode
+            images.append(image)
+
+        return images
+
+
+def read_blk_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        pixel_fmt = read_u32le(f)
+        if pixel_fmt == 0:
+            rawmode = "BGR;15"
+        elif pixel_fmt == 1:
+            rawmode = "BGR;16"
+        elif pixel_fmt == 0x1000000:
+            raise NotImplementedError("Pixel format 0x1000000 (big-endian BLK)")
+        else:
+            desc = "Expected pixel format to be 0x0 (RGB555) or 0x1 (RGB565), but got 0x{:x}".format(
+                pixel_fmt
+            )
+            raise ReadError(desc)
+
+        width_blocks = read_u16le(f)
+        height_blocks = read_u16le(f)
+        num_images = read_u16le(f)
+
+        if num_images != width_blocks * height_blocks:
+            raise ReadError(
+                "Expected {} x {} = {} sprites, but got {}".format(
+                    width_blocks,
+                    height_blocks,
+                    width_blocks * height_blocks,
+                    num_images,
+                )
+            )
+
+        offsets = []
+        next_offset = 10 + 8 * num_images
+        for _ in range(num_images):
+            offsets.append(read_u32le(f) + 4)
+            if offsets[-1] != next_offset:
+                raise ReadError(
+                    "Expected image offset to be {}, but got {}".format(
+                        next_offset, offsets[i]
+                    )
+                )
+            width = read_u16le(f)
+            height = read_u16le(f)
+            if width != 128 or height != 128:
+                raise ReadError(
+                    "Expected image size to be 128x128, but got {}x{}".format(
+                        width, height
+                    )
+                )
+            next_offset += 2 * 128 * 128
+
+        totalwidth = width_blocks * 128
+        totalheight = height_blocks * 128
 
         data = bytearray(totalwidth * totalheight * 2)
         for i in range(num_images):
             y = i % height_blocks
             x = i // height_blocks
-            for blocky in range(150):
-                start = (y * 150 + blocky) * totalwidth * 2 + x * 144 * 2
-                data[start : start + 144 * 2] = read_exact(f, 144 * 2)
+            for blocky in range(128):
+                start = (y * 128 + blocky) * totalwidth * 2 + x * 128 * 2
+                data[start : start + 128 * 2] = read_exact(f, 128 * 2)
 
         image = Image.frombytes(
             "RGB",
@@ -117,366 +288,220 @@ def read_s16_file(f):
             "raw",
             rawmode,
         )
-        return [image]
-    else:
-        images = []
-        for i in range(num_images):
-            image = Image.frombytes(
-                "RGB",
-                (widths[i], heights[i]),
-                read_exact(f, 2 * widths[i] * heights[i]),
-                "raw",
-                rawmode,
-            )
-            image.info["rawmode"] = rawmode
-            images.append(image)
-
-        return images
-
-
-def read_c16_file(f):
-    pixel_fmt = read_u32le(f)
-    if pixel_fmt == 2:
-        rawmode = "BGR;15"
-    elif pixel_fmt == 3:
-        rawmode = "BGR;16"
-    elif pixel_fmt == 0x3000000:
-        raise NotImplementedError("Pixel format 0x3000000 (big-endian M16)")
-    else:
-        desc = "Expected pixel format to be 0x2 (RGB555) or 0x3 (RGB565), but got 0x{:x}".format(
-            pixel_fmt
-        )
-        if pixel_fmt == 0:
-            desc += " (S16 RGB555)"
-        elif pixel_fmt == 1:
-            desc += " (S16 RGB565)"
-        elif pixel_fmt == 0x1000000:
-            desc += " (big-endian N16)"
-        raise ReadError(desc)
-
-    num_images = read_u16le(f)
-    offsets = []
-    widths = []
-    heights = []
-    for i in range(num_images):
-        line_offsets = [read_u32le(f)]
-        widths.append(read_u16le(f))
-        heights.append(read_u16le(f))
-        for j in range(heights[i] - 1):
-            line_offsets.append(read_u32le(f))
-        offsets.append(line_offsets)
-
-    images = []
-    for i in range(num_images):
-        # TODO: check offsets are correct
-        # TODO: use array module instead
-        data = bytearray(widths[i] * heights[i] * 2)
-        for j in range(heights[i]):
-            p = 0
-            while p < widths[i]:
-                rle_tag = read_u16le(f)
-                is_color = rle_tag & 0x1
-                run_length = rle_tag >> 1
-                if p + run_length > widths[i]:
-                    raise ReadError(
-                        "Got run_length {}, which would result in an overwide line of {}".format(
-                            run_length, p + run_length
-                        )
-                    )
-                if is_color:
-                    data[
-                        (j * widths[i] + p) * 2 : (j * widths[i] + p + run_length) * 2
-                    ] = read_exact(f, run_length * 2)
-                else:
-                    # bytearray() initializes memory to zero, so we don't need to do anything
-                    pass
-                p += run_length
-
-            end_of_line = read_u16le(f)
-            if end_of_line != 0:
-                raise ReadError(
-                    "Expected end-of-line byte to be 0, but got {}".format(end_of_line)
-                )
-        end_of_image = read_u16le(f)
-        if end_of_image != 0:
-            raise ReadError(
-                "Expected end-of-image byte to be 0, but got {}".format(end_of_image)
-            )
-        image = Image.frombytes(
-            "RGB", (widths[i], heights[i]), bytes(data), "raw", rawmode
-        )
         image.info["rawmode"] = rawmode
-        images.append(image)
-
-    return images
+        return image
 
 
-def read_blk_file(f):
-    pixel_fmt = read_u32le(f)
-    if pixel_fmt == 0:
-        rawmode = "BGR;15"
-    elif pixel_fmt == 1:
-        rawmode = "BGR;16"
-    elif pixel_fmt == 0x1000000:
-        raise NotImplementedError("Pixel format 0x1000000 (big-endian BLK)")
-    else:
-        desc = "Expected pixel format to be 0x0 (RGB555) or 0x1 (RGB565), but got 0x{:x}".format(
-            pixel_fmt
-        )
-        raise ReadError(desc)
-
-    width_blocks = read_u16le(f)
-    height_blocks = read_u16le(f)
-    num_images = read_u16le(f)
-
-    if num_images != width_blocks * height_blocks:
-        raise ReadError(
-            "Expected {} x {} = {} sprites, but got {}".format(
-                width_blocks, height_blocks, width_blocks * height_blocks, num_images
-            )
-        )
-
-    offsets = []
-    next_offset = 10 + 8 * num_images
-    for _ in range(num_images):
-        offsets.append(read_u32le(f) + 4)
-        if offsets[-1] != next_offset:
-            raise ReadError(
-                "Expected image offset to be {}, but got {}".format(
-                    next_offset, offsets[i]
+def read_spr_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        num_images = read_u16le(f)
+        next_offset = 2 + 8 * num_images
+        widths = []
+        heights = []
+        for _ in range(num_images):
+            offset = read_u32le(f)
+            if offset != next_offset:
+                raise ReadError(
+                    "Expected image offset to be {}, but got {}".format(
+                        next_offset, offset
+                    )
                 )
-            )
-        width = read_u16le(f)
-        height = read_u16le(f)
-        if width != 128 or height != 128:
-            raise ReadError(
-                "Expected image size to be 128x128, but got {}x{}".format(width, height)
-            )
-        next_offset += 2 * 128 * 128
+            widths.append(read_u16le(f))
+            heights.append(read_u16le(f))
+            next_offset += widths[-1] * heights[-1]
 
-    totalwidth = width_blocks * 128
-    totalheight = height_blocks * 128
+        if (
+            num_images == 464
+            and all(_ == 144 for _ in widths)
+            and all(_ == 150 for _ in heights)
+        ):
+            # this is a background, not a normal sprite file
+            width_blocks = 58
+            height_blocks = 8
+            totalwidth = 8352
+            totalheight = 1200
 
-    data = bytearray(totalwidth * totalheight * 2)
-    for i in range(num_images):
-        y = i % height_blocks
-        x = i // height_blocks
-        for blocky in range(128):
-            start = (y * 128 + blocky) * totalwidth * 2 + x * 128 * 2
-            data[start : start + 128 * 2] = read_exact(f, 128 * 2)
+            data = bytearray(totalwidth * totalheight)
+            for i in range(num_images):
+                y = i % height_blocks
+                x = i // height_blocks
+                for blocky in range(150):
+                    start = (y * 150 + blocky) * totalwidth + x * 144
+                    data[start : start + 144] = read_exact(f, 144)
 
-    image = Image.frombytes(
-        "RGB",
-        (totalwidth, totalheight),
-        bytes(data),
-        "raw",
-        rawmode,
-    )
-    image.info["rawmode"] = rawmode
-    return image
-
-
-def read_spr_file(f):
-    num_images = read_u16le(f)
-
-    next_offset = 2 + 8 * num_images
-    widths = []
-    heights = []
-    for _ in range(num_images):
-        offset = read_u32le(f)
-        if offset != next_offset:
-            raise ReadError(
-                "Expected image offset to be {}, but got {}".format(next_offset, offset)
-            )
-        widths.append(read_u16le(f))
-        heights.append(read_u16le(f))
-        next_offset += widths[-1] * heights[-1]
-
-    if (
-        num_images == 464
-        and all(_ == 144 for _ in widths)
-        and all(_ == 150 for _ in heights)
-    ):
-        # this is a background, not a normal sprite file
-        width_blocks = 58
-        height_blocks = 8
-        totalwidth = 8352
-        totalheight = 1200
-
-        data = bytearray(totalwidth * totalheight)
-        for i in range(num_images):
-            y = i % height_blocks
-            x = i // height_blocks
-            for blocky in range(150):
-                start = (y * 150 + blocky) * totalwidth + x * 144
-                data[start : start + 144] = read_exact(f, 144)
-
-        image = Image.frombytes(
-            "P",
-            (totalwidth, totalheight),
-            bytes(data),
-        )
-        image.putpalette(CREATURES1_PALETTE)
-        return [image]
-    else:
-        images = []
-        for i in range(num_images):
-            data = read_exact(f, widths[i] * heights[i])
             image = Image.frombytes(
                 "P",
-                (widths[i], heights[i]),
-                data,
+                (totalwidth, totalheight),
+                bytes(data),
             )
-            # TODO: are all blacks transparent? or just palette index 0?
             image.putpalette(CREATURES1_PALETTE)
-            images.append(image)
+            return [image]
+        else:
+            images = []
+            for i in range(num_images):
+                data = read_exact(f, widths[i] * heights[i])
+                image = Image.frombytes(
+                    "P",
+                    (widths[i], heights[i]),
+                    data,
+                )
+                # TODO: are all blacks transparent? or just palette index 0?
+                image.putpalette(CREATURES1_PALETTE)
+                images.append(image)
 
-        return images
-
-
-def write_spr_file(f, images):
-    images = [
-        convert_image(img, "P", palette=CREATURES1_PALETTE)
-        if img.getpalette() != CREATURES1_PALETTE
-        else img
-        for img in images
-    ]
-
-    if len(images) == 1 and images[0].width == 8352 and images[0].height == 1200:
-        # this is a background, not a normal sprite file
-        img = images[0]
-        num_images = 464
-        width_blocks = 58
-        height_blocks = 8
-        sprwidth = 144
-        sprheight = 150
-        write_u16le(f, num_images)
-        for i in range(num_images):
-            write_u32le(f, 2 + 8 * num_images + sprwidth * sprheight * i)  # offset
-            write_u16le(f, sprwidth)  # width
-            write_u16le(f, sprheight)  # height
-
-        data = img.tobytes()
-        for i in range(num_images):
-            y = i % height_blocks
-            x = i // height_blocks
-            for blocky in range(sprheight):
-                start = (y * sprheight + blocky) * img.width + x * sprwidth
-                write_all(f, data[start : start + sprwidth])
-    else:
-        write_u16le(f, len(images))
-        next_offset = 2 + 8 * len(images)
-        for img in images:
-            write_u32le(f, next_offset)
-            write_u16le(f, img.width)
-            write_u16le(f, img.height)
-            next_offset += img.width * img.height
-
-        for img in images:
-            write_all(f, img.tobytes())
+            return images
 
 
-def write_s16_file(f, images, pixel_fmt="RGB565"):
-    if pixel_fmt == "RGB555":
-        rawmode = "BGR;15"
-        write_u32le(f, 0)
-    elif pixel_fmt == "RGB565":
-        rawmode = "BGR;16"
-        write_u32le(f, 1)
-    else:
-        raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
+def write_spr_file(fname_or_stream, images):
+    with open_if_not_stream(fname_or_stream, "wb") as f:
+        images = [
+            convert_image(img, "P", palette=CREATURES1_PALETTE)
+            if img.getpalette() != CREATURES1_PALETTE
+            else img
+            for img in images
+        ]
 
-    if len(images) == 1 and images[0].width == 8352 and images[0].height == 2400:
-        # this is a background, not a normal sprite file
-        img = images[0]
-        num_images = 928
-        width_blocks = 58
-        height_blocks = 16
-        sprwidth = 144
-        sprheight = 150
-        write_u16le(f, num_images)
-        for i in range(num_images):
-            write_u32le(f, 6 + 8 * num_images + sprwidth * sprheight * 2 * i)  # offset
-            write_u16le(f, sprwidth)  # width
-            write_u16le(f, sprheight)  # height
+        if len(images) == 1 and images[0].width == 8352 and images[0].height == 1200:
+            # this is a background, not a normal sprite file
+            img = images[0]
+            num_images = 464
+            width_blocks = 58
+            height_blocks = 8
+            sprwidth = 144
+            sprheight = 150
+            write_u16le(f, num_images)
+            for i in range(num_images):
+                write_u32le(f, 2 + 8 * num_images + sprwidth * sprheight * i)  # offset
+                write_u16le(f, sprwidth)  # width
+                write_u16le(f, sprheight)  # height
 
-        data = convert_image(img, rawmode).tobytes()
-        for i in range(num_images):
-            y = i % height_blocks
-            x = i // height_blocks
-            for blocky in range(sprheight):
-                start = (y * sprheight + blocky) * img.width * 2 + x * sprwidth * 2
-                write_all(f, data[start : start + sprwidth * 2])
-    else:
-        write_u16le(f, len(images))
-        next_offset = 6 + 8 * len(images)
-        for img in images:
-            write_u32le(f, next_offset)
-            write_u16le(f, img.width)
-            write_u16le(f, img.height)
-            next_offset += 2 * img.width * img.height
-
-        for img in images:
-            write_all(f, convert_image(img, rawmode).tobytes())
-
-
-def write_c16_file(f, images, pixel_fmt="RGB565"):
-    if pixel_fmt == "RGB555":
-        rawmode = "BGR;15"
-        write_u32le(f, 2)
-    elif pixel_fmt == "RGB565":
-        rawmode = "BGR;16"
-        write_u32le(f, 3)
-    else:
-        raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
-
-    write_u16le(f, len(images))
-
-    output_position = 6
-    for img in images:
-        output_position += 4 + 4 * img.height
-
-    compressed_data = []
-    for i, img in enumerate(images):
-        data = array.array("H", convert_image(img, rawmode).tobytes())
-        compressed = io.BytesIO()
-
-        for j in range(img.height):
-            write_u32le(f, output_position)
-            if j == 0:
+            data = img.tobytes()
+            for i in range(num_images):
+                y = i % height_blocks
+                x = i // height_blocks
+                for blocky in range(sprheight):
+                    start = (y * sprheight + blocky) * img.width + x * sprwidth
+                    write_all(f, data[start : start + sprwidth])
+        else:
+            write_u16le(f, len(images))
+            next_offset = 2 + 8 * len(images)
+            for img in images:
+                write_u32le(f, next_offset)
                 write_u16le(f, img.width)
                 write_u16le(f, img.height)
+                next_offset += img.width * img.height
 
-            p = 0
-            while p < img.width:
-                run_length = 0
-                if data[img.width * j + p] == 0:
-                    while p < img.width and data[img.width * j + p] == 0:
-                        p += 1
-                        run_length += 1
-                    output_position += 2
-                    write_u16le(compressed, run_length << 1)
-                else:
-                    while p < img.width and data[img.width * j + p] != 0:
-                        p += 1
-                        run_length += 1
-                    output_position += 2 + run_length * 2
-                    write_u16le(compressed, (run_length << 1) | 1)
-                    write_many_u16le(
-                        compressed,
-                        data[img.width * j + (p - run_length) : img.width * j + p],
-                    )
+            for img in images:
+                write_all(f, img.tobytes())
+
+
+def write_s16_file(fname_or_stream, images, pixel_fmt="RGB565"):
+    if pixel_fmt not in ("RGB555", "RGB565"):
+        raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
+
+    with open_if_not_stream(fname_or_stream, "wb") as f:
+        if pixel_fmt == "RGB555":
+            rawmode = "BGR;15"
+            write_u32le(f, 0)
+        elif pixel_fmt == "RGB565":
+            rawmode = "BGR;16"
+            write_u32le(f, 1)
+
+        if len(images) == 1 and images[0].width == 8352 and images[0].height == 2400:
+            # this is a background, not a normal sprite file
+            img = images[0]
+            num_images = 928
+            width_blocks = 58
+            height_blocks = 16
+            sprwidth = 144
+            sprheight = 150
+            write_u16le(f, num_images)
+            for i in range(num_images):
+                write_u32le(
+                    f, 6 + 8 * num_images + sprwidth * sprheight * 2 * i
+                )  # offset
+                write_u16le(f, sprwidth)  # width
+                write_u16le(f, sprheight)  # height
+
+            data = convert_image(img, rawmode).tobytes()
+            for i in range(num_images):
+                y = i % height_blocks
+                x = i // height_blocks
+                for blocky in range(sprheight):
+                    start = (y * sprheight + blocky) * img.width * 2 + x * sprwidth * 2
+                    write_all(f, data[start : start + sprwidth * 2])
+        else:
+            write_u16le(f, len(images))
+            next_offset = 6 + 8 * len(images)
+            for img in images:
+                write_u32le(f, next_offset)
+                write_u16le(f, img.width)
+                write_u16le(f, img.height)
+                next_offset += 2 * img.width * img.height
+
+            for img in images:
+                write_all(f, convert_image(img, rawmode).tobytes())
+
+
+def write_c16_file(fname_or_stream, images, pixel_fmt="RGB565"):
+    if pixel_fmt not in ("RGB555", "RGB565"):
+        raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
+
+    with open_if_not_stream(fname_or_stream, "wb") as f:
+        if pixel_fmt == "RGB555":
+            rawmode = "BGR;15"
+            write_u32le(f, 2)
+        elif pixel_fmt == "RGB565":
+            rawmode = "BGR;16"
+            write_u32le(f, 3)
+
+        write_u16le(f, len(images))
+
+        output_position = 6
+        for img in images:
+            output_position += 4 + 4 * img.height
+
+        compressed_data = []
+        for i, img in enumerate(images):
+            data = array.array("H", convert_image(img, rawmode).tobytes())
+            compressed = io.BytesIO()
+
+            for j in range(img.height):
+                write_u32le(f, output_position)
+                if j == 0:
+                    write_u16le(f, img.width)
+                    write_u16le(f, img.height)
+
+                p = 0
+                while p < img.width:
+                    run_length = 0
+                    if data[img.width * j + p] == 0:
+                        while p < img.width and data[img.width * j + p] == 0:
+                            p += 1
+                            run_length += 1
+                        output_position += 2
+                        write_u16le(compressed, run_length << 1)
+                    else:
+                        while p < img.width and data[img.width * j + p] != 0:
+                            p += 1
+                            run_length += 1
+                        output_position += 2 + run_length * 2
+                        write_u16le(compressed, (run_length << 1) | 1)
+                        write_many_u16le(
+                            compressed,
+                            data[img.width * j + (p - run_length) : img.width * j + p],
+                        )
+                output_position += 2
+                write_u16le(compressed, 0)
             output_position += 2
             write_u16le(compressed, 0)
-        output_position += 2
-        write_u16le(compressed, 0)
-        compressed_data.append(compressed.getbuffer())
+            compressed_data.append(compressed.getbuffer())
 
-    for compressed in compressed_data:
-        write_all(f, compressed)
+        for compressed in compressed_data:
+            write_all(f, compressed)
 
 
-def write_blk_file(f, image, pixel_fmt="RGB565"):
+def write_blk_file(fname_or_stream, image, pixel_fmt="RGB565"):
     if image.width % 128 != 0 or image.height % 128 != 0:
         raise ValueError(
             "Expected image size to be evenly divisible by 128x128, but got {}x{}".format(
@@ -484,33 +509,35 @@ def write_blk_file(f, image, pixel_fmt="RGB565"):
             )
         )
 
-    width_blocks = image.width // 128
-    height_blocks = image.height // 128
-
-    if pixel_fmt == "RGB555":
-        rawmode = "BGR;15"
-        write_u32le(f, 0)
-    elif pixel_fmt == "RGB565":
-        rawmode = "BGR;16"
-        write_u32le(f, 1)
-    else:
+    if pixel_fmt not in ("RGB555", "RGB565"):
         raise ValueError("pixel_fmt must be either 'RGB565' or 'RGB555'")
 
-    write_u16le(f, width_blocks)
-    write_u16le(f, height_blocks)
-    num_images = width_blocks * height_blocks
-    write_u16le(f, num_images)
+    with open_if_not_stream(fname_or_stream, "wb") as f:
+        width_blocks = image.width // 128
+        height_blocks = image.height // 128
 
-    for i in range(num_images):
-        write_u32le(f, 10 + 8 * num_images + i * 128 * 128 * 2 - 4)  # offset
-        write_u16le(f, 128)  # width
-        write_u16le(f, 128)  # height
+        if pixel_fmt == "RGB555":
+            rawmode = "BGR;15"
+            write_u32le(f, 0)
+        elif pixel_fmt == "RGB565":
+            rawmode = "BGR;16"
+            write_u32le(f, 1)
 
-    data = convert_image(image, rawmode).tobytes()
+        write_u16le(f, width_blocks)
+        write_u16le(f, height_blocks)
+        num_images = width_blocks * height_blocks
+        write_u16le(f, num_images)
 
-    for i in range(num_images):
-        y = i % height_blocks
-        x = i // height_blocks
-        for blocky in range(128):
-            start = (y * 128 + blocky) * image.width * 2 + x * 128 * 2
-            write_all(f, data[start : start + 128 * 2])
+        for i in range(num_images):
+            write_u32le(f, 10 + 8 * num_images + i * 128 * 128 * 2 - 4)  # offset
+            write_u16le(f, 128)  # width
+            write_u16le(f, 128)  # height
+
+        data = convert_image(image, rawmode).tobytes()
+
+        for i in range(num_images):
+            y = i % height_blocks
+            x = i // height_blocks
+            for blocky in range(128):
+                start = (y * 128 + blocky) * image.width * 2 + x * 128 * 2
+                write_all(f, data[start : start + 128 * 2])
