@@ -3,6 +3,7 @@ import array
 import struct
 import io
 
+from ._image_utils import *
 from ._io_utils import *
 from .exceptions import *
 
@@ -333,11 +334,8 @@ def read_spr_file(f):
 
 
 def write_spr_file(f, images):
-    palette_image = Image.new("P", (1, 1))
-    palette_image.putpalette(CREATURES1_PALETTE)
-
     images = [
-        img.convert("RGB").quantize(palette=palette_image)
+        convert_image(img, "P", palette=CREATURES1_PALETTE)
         if img.getpalette() != CREATURES1_PALETTE
         else img
         for img in images
@@ -401,7 +399,7 @@ def write_s16_file(f, images, pixel_fmt="RGB565"):
             write_u16le(f, sprwidth)  # width
             write_u16le(f, sprheight)  # height
 
-        data = img.convert(rawmode).tobytes()
+        data = convert_image(img, rawmode).tobytes()
         for i in range(num_images):
             y = i % height_blocks
             x = i // height_blocks
@@ -418,7 +416,7 @@ def write_s16_file(f, images, pixel_fmt="RGB565"):
             next_offset += 2 * img.width * img.height
 
         for img in images:
-            write_all(f, img.convert(rawmode).tobytes())
+            write_all(f, convert_image(img, rawmode).tobytes())
 
 
 def write_c16_file(f, images, pixel_fmt="RGB565"):
@@ -439,7 +437,7 @@ def write_c16_file(f, images, pixel_fmt="RGB565"):
 
     compressed_data = []
     for i, img in enumerate(images):
-        data = array.array("H", img.convert(rawmode).tobytes())
+        data = array.array("H", convert_image(img, rawmode).tobytes())
         compressed = io.BytesIO()
 
         for j in range(img.height):
@@ -507,7 +505,7 @@ def write_blk_file(f, image, pixel_fmt="RGB565"):
         write_u16le(f, 128)  # width
         write_u16le(f, 128)  # height
 
-    data = image.convert(rawmode).tobytes()
+    data = convert_image(image, rawmode).tobytes()
 
     for i in range(num_images):
         y = i % height_blocks
