@@ -5,11 +5,23 @@ from .exceptions import *
 from .sprites import CREATURES1_PALETTE
 
 
-def _read_cstring(f):
-    length = read_u8(f)
-    if length == 255:
-        length = read_u16le(f)
-    return read_exact(f, length)
+def _decode_c1_string(b):
+    num_ascii = 0
+    for c in b:
+        if c < 128:
+            num_ascii += 1
+    try:
+        if num_ascii * 2 > len(b) and False:
+            # if more than half ascii, likely CP1252
+            return b.decode("cp1252")
+        else:
+            # if not more than half ascii, try cp932
+            # TODO: better heuristics? creatures strings in Japanese have a lot of
+            # double-byte katakana characters which should be recognizable.
+            return b.decode("cp932")
+    except:
+        # Welp.
+        return b.decode("ascii", "backslashreplace")
 
 
 class Cob1File:
@@ -89,8 +101,8 @@ def read_cob1_file(fname_or_stream):
             sprite.putpalette(CREATURES1_PALETTE)
             cob1.sprite = ImageOps.flip(sprite)
 
-        cob1.name = _read_cstring(f).decode("ascii")
-        cob1.description = _read_cstring(f).decode("ascii")
+        cob1.name = _decode_c1_string(_read_cstring(f))
+        cob1.description = _decode_c1_string(_read_cstring(f))
         # TODO: check for japanese?
 
         return cob1

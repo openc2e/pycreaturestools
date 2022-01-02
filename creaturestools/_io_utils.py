@@ -34,6 +34,17 @@ def read_u32le(f):
     return struct.unpack("<I", read_exact(f, 4))[0]
 
 
+def read_cstring(f):
+    length = read_u8(f)
+    if length == 0xFF:
+        length = read_u16le(f)
+    if length == 0xFFFF:
+        length = read_u32le(f)
+    if length == 0xFFFFFFFF:
+        raise NotImplementedError("CString with length > 0xFFFFFFFF")
+    return read_exact(f, length)
+
+
 def write_all(f, value):
     while value:
         n = f.write(value)
