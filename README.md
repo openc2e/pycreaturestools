@@ -15,6 +15,7 @@ Tools:
 - creaturescavesextractor: Extracts files downloaded from Creatures Caves
 - cobdump: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
 - extract_alb2203_sprs: 👀
+- gen2json: Parses a GEN file and outputs a JSON representation
 - glstdumper: Parses a GLST block
 - gno_dumper: Parses genome notes (GNO) files
 - new_breed_installer_extract: Extracts files created by Kinnison's New Breed Installer
