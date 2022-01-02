@@ -6,6 +6,7 @@ File types supported:
 - C16 images (read+write)
 - BLK images (read+write, macOS big-endian version not supported)
 - Creatures 1 COB/RCB files (read only)
+- GEN files (read only, version 3 only)
 
 Tools:
 - c16dump: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
