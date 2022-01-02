@@ -9,11 +9,10 @@ File types supported:
 - GEN files (read only, version 3 only)
 
 Tools:
-- c16dump: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
 - caossyntaxdumper: Parses a caos.syntax file
 - creaturescavesdownloader: Downloads files from Creatures Caves
 - creaturescavesextractor: Extracts files downloaded from Creatures Caves
-- cobdump: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
+- cobdumper: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
 - extract_alb2203_sprs: 👀
 - gen2json: Parses a GEN file and outputs a JSON representation
 - glstdumper: Parses a GLST block
@@ -25,5 +24,6 @@ Tools:
 - read_pefile: Parses resources from Windows executables
 - sfcdumper: Parses SFC files
 - sfcdumperv2: Parses SFC files
+- spritedumper: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
 - szdd_dumper: Decompresses files compressed on old versions of MS-DOS
 - translate_voice: Converts a string of text into Creatures sounds

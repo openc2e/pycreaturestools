@@ -28,3 +28,7 @@ def main():
             data[_] = getattr(gene, _)
         genes_data.append(data)
     print(json.dumps(genes_data, cls=MyEncoder, indent=4))
+
+
+if __name__ == "__main__":
+    main()
