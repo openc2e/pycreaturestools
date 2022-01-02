@@ -7,6 +7,7 @@ setup(
     version="0.1",
     description="",
     url="https://github.com/openc2e/pycreaturestools",
+    packages=["creaturestools"],
     install_requires=[
         "Pillow",
     ],
