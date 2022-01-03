@@ -25,24 +25,24 @@ spritedumper my_sprite.c16
 ```
 
 Available tools:
+- **cobdumper**: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
+- **gen2json**: Parses a GEN file and outputs a JSON representation
+- **praycrush**: Recompresses a PRAY file to make it as small as possible
+- **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
+- **spritedumper**: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
 - caossyntaxdumper: Parses a caos.syntax file
 - creaturescavesdownloader: Downloads files from Creatures Caves
 - creaturescavesextractor: Extracts files downloaded from Creatures Caves
-- cobdumper: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
 - extract_alb2203_sprs: 👀
-- gen2json: Parses a GEN file and outputs a JSON representation
 - glstdumper: Parses a GLST block
 - gno_dumper: Parses genome notes (GNO) files
 - new_breed_installer_extract: Extracts files created by Kinnison's New Breed Installer
 - parse_2er: Parses 2ER files
 - parse_creaturesarchive: Parses CreaturesArchive files (poorly)
-- praycrush: Recompresses a PRAY file to make it as small as possible
-- praydumper: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - read_aphro: Parses Aphro, AphroBU, Health, and HealthBU files
 - read_pefile: Parses resources from Windows executables
 - sfcdumper: Parses SFC files
 - sfcdumperv2: Parses SFC files
-- spritedumper: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
 - szdd_dumper: Decompresses files compressed on old versions of MS-DOS
 - translate_voice: Converts a string of text into Creatures sounds
 
