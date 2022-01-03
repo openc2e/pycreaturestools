@@ -1,4 +1,4 @@
-Python tools for working with the [_Creatures_](https://creatures.wiki/) series of games
+Python tools for working with the [_Creatures_](https://creatures.wiki/) series of games.
 
 ## File types
 
@@ -9,6 +9,7 @@ File types supported:
 - BLK images (read+write, macOS big-endian version not supported)
 - Creatures 1 COB/RCB files (read only)
 - GEN files (read only, version 3 only)
+- PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read only)
 
 ## Command-line Tools
 
@@ -35,6 +36,7 @@ Available tools:
 - new_breed_installer_extract: Extracts files created by Kinnison's New Breed Installer
 - parse_2er: Parses 2ER files
 - parse_creaturesarchive: Parses CreaturesArchive files (poorly)
+- praydumper: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - read_aphro: Parses Aphro, AphroBU, Health, and HealthBU files
 - read_pefile: Parses resources from Windows executables
 - sfcdumper: Parses SFC files
@@ -56,6 +58,11 @@ Available tools:
 - `svrule3_from_bytes(bytes[48]) -> List[str]`
 - `SVRULE3_OPCODES: Mapping[int, str]`
 - `SVRULE3_OPERAND_TYPES: Mapping[int, str]`
+
+**creaturestools.pray**
+- `read_pray_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either `bytes` or a `dict`)
+- `pray_to_pray_source(blocks, Optional[filenamefilter]) -> str`
+- `PRAY_TAG_BLOCK_TYPES: List[str]`
 
 **creaturestools.sprites**
 - `read_spr_file(fname_or_stream) -> List[PIL.Image]`

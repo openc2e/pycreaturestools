@@ -56,6 +56,11 @@ def read_cstring(f):
     return read_exact(f, length)
 
 
+def read_u32le_prefixed_string(f):
+    length = read_u32le(f)
+    return read_exact(f, length)
+
+
 def write_all(f, value):
     while value:
         n = f.write(value)
