@@ -63,7 +63,7 @@ Available tools:
 **creaturestools.pray**
 - `read_pray_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either `bytes` or a `dict`)
 - `pray_to_pray_source(blocks, Optional[filenamefilter]) -> str`
-- `iter_pray_file_raw(fname_or_stream) -> Iterator[(block_name, block_Type, length_decompressed, flag_compressed, data)]`
+- `iter_pray_file_raw(fname_or_stream) -> Iterator[(block_name, block_type, length_decompressed, flag_compressed, compressed_data)]`
 - `PRAY_TAG_BLOCK_TYPES: List[str]`
 
 **creaturestools.sprites**
