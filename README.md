@@ -36,6 +36,7 @@ Available tools:
 - new_breed_installer_extract: Extracts files created by Kinnison's New Breed Installer
 - parse_2er: Parses 2ER files
 - parse_creaturesarchive: Parses CreaturesArchive files (poorly)
+- praycrush: Recompresses a PRAY file to make it as small as possible
 - praydumper: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - read_aphro: Parses Aphro, AphroBU, Health, and HealthBU files
 - read_pefile: Parses resources from Windows executables
@@ -62,6 +63,7 @@ Available tools:
 **creaturestools.pray**
 - `read_pray_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either `bytes` or a `dict`)
 - `pray_to_pray_source(blocks, Optional[filenamefilter]) -> str`
+- `iter_pray_file_raw(fname_or_stream) -> Iterator[(block_name, block_Type, length_decompressed, flag_compressed, data)]`
 - `PRAY_TAG_BLOCK_TYPES: List[str]`
 
 **creaturestools.sprites**

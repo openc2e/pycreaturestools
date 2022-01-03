@@ -44,7 +44,7 @@ def _parse_tag_data(data):
     return values
 
 
-def read_pray_file(fname_or_stream):
+def iter_pray_file_raw(fname_or_stream):
     with open_if_not_stream(fname_or_stream, "rb") as f:
         magic = read_exact(f, 4)
         if magic != b"PRAY":
@@ -52,7 +52,6 @@ def read_pray_file(fname_or_stream):
                 "Expected file magic to be b'PRAY', but got {}".format(magic)
             )
 
-        blocks = []
         while f.peek():
             block_type = read_exact(f, 4).decode("ascii")
             # TODO: validate it's ascii alphanumeric?
@@ -75,8 +74,8 @@ def read_pray_file(fname_or_stream):
                         flags
                     )
                 )
-            compressed = flags & 1
-            if (length != length_decompressed) != compressed:
+            flag_compressed = flags & 1
+            if (length != length_decompressed) != flag_compressed:
                 raise ReadError(
                     "Expected compression flag {} to match length {} and length_decompressed {}".format(
                         compressed, length, length_decompressed
@@ -84,20 +83,33 @@ def read_pray_file(fname_or_stream):
                 )
 
             data = read_exact(f, length)
-            if compressed:
-                data = zlib.decompress(data)
 
-            if len(data) != length_decompressed:
-                raise ReadError(
-                    "Expected length of decompressed data to be {}, but got {}".format(
-                        length_decompressed, len(data)
-                    )
+            yield block_type, block_name, length_decompressed, flag_compressed, data
+
+
+def read_pray_file(fname_or_stream):
+    blocks = []
+    for (
+        block_type,
+        block_name,
+        length_decompressed,
+        flag_compressed,
+        data,
+    ) in iter_pray_file_raw(fname_or_stream):
+        if flag_compressed:
+            data = zlib.decompress(data)
+
+        if len(data) != length_decompressed:
+            raise ReadError(
+                "Expected length of decompressed data to be {}, but got {}".format(
+                    length_decompressed, len(data)
                 )
+            )
 
-            if block_type in PRAY_TAG_BLOCK_TYPES:
-                data = _parse_tag_data(data)
+        if block_type in PRAY_TAG_BLOCK_TYPES:
+            data = _parse_tag_data(data)
 
-            blocks.append((block_type, block_name, data))
+        blocks.append((block_type, block_name, data))
     return blocks
 
 
