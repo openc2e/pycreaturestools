@@ -4,7 +4,7 @@ import struct
 import sys
 
 from creaturestools._io_utils import *
-from creaturestools.agents import _decode_c1_string
+from creaturestools.cobs import _decode_c1_string
 
 
 def main():

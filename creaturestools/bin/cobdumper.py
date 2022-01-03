@@ -3,7 +3,7 @@ import sys
 
 from PIL import Image
 
-import creaturestools.agents
+import creaturestools.cobs
 from creaturestools.caos import format_c1_caos
 
 
@@ -20,9 +20,9 @@ def main():
             rcb_filename = os.path.join(os.path.dirname(cob_filename), n)
             break
 
-    cob = creaturestools.agents.read_cob1_file(cob_filename)
+    cob = creaturestools.cobs.read_cob1_file(cob_filename)
     if rcb_filename:
-        rcb = creaturestools.agents.read_cob1_file(rcb_filename)
+        rcb = creaturestools.cobs.read_cob1_file(rcb_filename)
     else:
         rcb = False
 

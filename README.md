@@ -47,11 +47,11 @@ Available tools:
 
 ## Library API
 
-**creaturestools.agents**
-- `read_cob1_file(fname_or_stream) -> creaturestools.agents.Cob1File`
-
 **creaturestools.caos**
 - `format_c1_caos(str) -> str`
+
+**creaturestools.cobs**
+- `read_cob1_file(fname_or_stream) -> creaturestools.cobs.Cob1File`
 
 **creaturestools.genetics**
 - `read_gen3_file(fname_or_stream) -> List[creaturestools.genetics.Gene]`
