@@ -73,4 +73,5 @@ Available tools:
 - `write_c16_file(fname_or_stream, List[PIL.Image])`
 - `write_spr_file(fname_or_stream, List[PIL.Image])`
 - `write_blk_file(fname_or_stream, PIL.Image)`
+- `stitch_to_sheet(List[PIL.Image]) -> PIL.Image`
 - `CREATURES1_PALETTE: int[256 * 3]`
