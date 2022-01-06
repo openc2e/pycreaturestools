@@ -3,6 +3,7 @@ import os
 import sys
 
 from creaturestools.pray import *
+from creaturestools.praysource import *
 from creaturestools.sprites import *
 
 

@@ -10,6 +10,7 @@ File types supported:
 - Creatures 1 COB/RCB files (read only)
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read only)
+- PRAY source files (read+write)
 
 ## Command-line Tools
 
@@ -62,9 +63,14 @@ Available tools:
 
 **creaturestools.pray**
 - `read_pray_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either `bytes` or a `dict`)
-- `pray_to_pray_source(blocks, Optional[filenamefilter]) -> str`
-- `iter_pray_file_raw(fname_or_stream) -> Iterator[(block_name, block_type, length_decompressed, flag_compressed, compressed_data)]`
+- `write_pray_file(fname_or_stream, blocks, compression=9)`
 - `PRAY_TAG_BLOCK_TYPES: List[str]`
+
+**creaturestools.praysource**
+- `pray_to_pray_source(blocks, Optional[filenamefilter]) -> str`
+- `parse_pray_source(pray_source) -> List[(block_name, block_type, data)]` (block data is either a `dict` or `pathlib.Path`, dict values are either `int`, `str`, or `pathlib.Path`)
+- `parse_pray_source_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either a `dict` or `pathlib.Path`)
+- `pray_load_file_references(blocks, fileloaderfunc) -> List[(block_name, block_type, data)]` (replaces all `pathlib.Path` values with the result of fileloaderfunc, resulting block data is either `bytes` or a `dict`)
 
 **creaturestools.sprites**
 - `read_spr_file(fname_or_stream) -> List[PIL.Image]`

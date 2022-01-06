@@ -15,6 +15,11 @@ def open_if_not_stream(f, mode):
         return _nullcontext(f)
 
 
+def read_entire_file(path):
+    with open(path, "rb") as f:
+        return f.read()
+
+
 def peek_exact(f, n):
     result = f.peek(n)[:n]
     if len(result) != n:
@@ -78,6 +83,24 @@ def write_many_u16le(f, values):
 
 def write_u32le(f, value):
     write_all(f, struct.pack("<I", value))
+
+
+def decode_creatures_string(s):
+    if not isinstance(s, bytes):
+        raise ValueError("Expected bytes, but got {!r}".format(s))
+
+    if s[0:3] == b"\xef\xbb\xbf":
+        return s[3:].decode("utf-8")
+    if s[0:2] == b"\xff\xfe":
+        return s[2:].decode("utf-16-le")
+    if s[0:2] == b"\xfe\xff":
+        return s[2:].decode("utf-16-be")
+
+    try:
+        return s.decode("utf-8")
+    except DecodeError:
+        # TODO: make sure it makes sense? some sort of character detection?
+        return s.decode("cp1252")
 
 
 class better_peekable_stream:

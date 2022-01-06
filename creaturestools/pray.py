@@ -1,5 +1,6 @@
 import io
 import re
+import string
 import zlib
 
 from creaturestools._io_utils import *
@@ -113,74 +114,56 @@ def read_pray_file(fname_or_stream):
     return blocks
 
 
-def _escape(s):
-    return (
-        s.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-    )
+def _encode_pray_tags(data):
+    out = io.BytesIO()
+
+    int_tags = []
+    str_tags = []
+    for key, value in data.items():
+        if isinstance(value, int):
+            int_tags.append((key.encode("cp1252"), value))
+        elif isinstance(value, str):
+            str_tags.append((key.encode("cp1252"), value.encode("cp1252")))
+        else:
+            raise ValueError("Can't encode tag {!r} value {!r}".format(key, value))
+
+    write_u32le(out, len(int_tags))
+    for key, value in int_tags:
+        write_u32le(out, len(key))
+        write_all(out, key)
+        write_u32le(out, value)
+
+    write_u32le(out, len(str_tags))
+    for key, value in str_tags:
+        write_u32le(out, len(key))
+        write_all(out, key)
+        write_u32le(out, len(value))
+        write_all(out, value)
+
+    return bytes(out.getbuffer())
 
 
-def _natural_sort_key(text):
-    parts = [
-        int(c) if c.isdigit() else c.lower() for c in re.split("([0-9]+)", text) if c
-    ]
-    if isinstance(parts[0], int):
-        # keep a string integer string pattern
-        parts.insert(0, "")
-    return tuple(parts)
+def write_pray_file(fname_or_stream, blocks, compression=9):
+    with open_if_not_stream(fname_or_stream, "wb") as f:
+        write_all(f, b"PRAY")
 
+        for (block_type, block_name, data) in blocks:
 
-def _pray_sort_key(text):
-    # keep Dependency and Dependency Category keys next to each other
-    m = re.search("^Dependency Category (\d+)", text)
-    if m:
-        text = f"Dependency {m[1]} Category"
-    # put Dependency Count before Dependencies
-    if text == "Dependency Count":
-        text = "Dependency 0 Count"
-    # put Script Count before Script
-    if text == "Script Count":
-        text = "Script 0 Count"
+            write_all(f, block_type.encode("ascii"))
+            write_all(f, (block_name + (128 - len(block_name)) * "\0").encode("cp1252"))
 
-    return _natural_sort_key(text)
-
-
-def pray_to_pray_source(blocks, filenamefilter=lambda name, data: name):
-    pray_source = ""
-    pray_source += '"en-GB"\n\n'
-
-    data_blocks = []
-    for (block_type, block_name, data) in blocks:
-        if isinstance(data, bytes):
-            # save these for the end
-            data_blocks.append((block_type, block_name, data))
-            continue
-
-        assert isinstance(data, dict)
-        pray_source += f'group {block_type} "{_escape(block_name)}"\n'
-        for key in sorted(data, key=_pray_sort_key):
-            value = data[key]
-            if isinstance(value, int):
-                pray_source += f'"{_escape(key)}" {value}\n'
-                continue
-
-            assert isinstance(value, str)
-            if key.startswith("Script ") and len(value) > 100:
-                value = value.encode("utf-8")  # I guess?
-                block_output_filename = filenamefilter(f"{block_name}_{key}.cos", value)
-                pray_source += (
-                    f'"{_escape(key)}" @ "{_escape(block_output_filename)}"\n'
+            if isinstance(data, dict):
+                data = _encode_pray_tags(data)
+            if not isinstance(data, bytes):
+                raise ValueError(
+                    "Can't write pray block data of type {!r}".format(data)
                 )
-            else:
-                pray_source += f'"{_escape(key)}" "{_escape(value)}"\n'
-        pray_source += "\n"
 
-    for (block_type, block_name, data) in sorted(
-        data_blocks, key=lambda _: (_[0].lower(), _natural_sort_key(_[1]))
-    ):
-        block_output_filename = filenamefilter(block_name, data)
-        pray_source += f'inline {block_type} "{_escape(block_name)}" "{_escape(block_output_filename)}"\n'
+            original_data_length = len(data)
+            if compression:
+                data = zlib.compress(data, level=compression)
 
-    return pray_source
+            write_u32le(f, len(data))
+            write_u32le(f, original_data_length)
+            write_u32le(f, 1 if compression else 0)
+            write_all(f, data)
