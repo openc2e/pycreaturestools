@@ -7,6 +7,7 @@ File types supported:
 - S16 images (read+write, including back.s16)
 - C16 images (read+write)
 - BLK images (read+write, macOS big-endian version not supported)
+- PNG spritesheets (write only)
 - Creatures 1 COB/RCB files (read only)
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read only)
