@@ -28,6 +28,7 @@ spritedumper my_sprite.c16
 Available tools:
 - **cobdumper**: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
 - **gen2json**: Parses a GEN file and outputs a JSON representation
+- **praybuilder**: Parse a PRAY source file and writes an AGENTS file
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - **spritedumper**: Takes a sprite (SPR, S16, C16, or BLK) and writes out the frames as PNGs
