@@ -11,7 +11,7 @@ File types supported:
 - PNG spritesheets (write only)
 - Creatures 1 COB/RCB files (read only)
 - GEN files (read only, version 3 only)
-- PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read only)
+- PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
 
 ## Command-line Tools
