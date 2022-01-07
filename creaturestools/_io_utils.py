@@ -125,7 +125,7 @@ class better_peekable_stream:
             result += self._underlying_stream.read(n - len(result))
         return result
 
-    def peek(self, n):
+    def peek(self, n=1):
         while len(self._peeked) < n:
             read = self._underlying_stream.read(n - len(self._peeked))
             if len(read) == 0:

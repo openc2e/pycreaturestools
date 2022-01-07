@@ -40,7 +40,7 @@ def _pray_sort_key(text):
     return _natural_sort_key(text)
 
 
-def pray_to_pray_source(blocks, filenamefilter=lambda name, data: name):
+def generate_pray_source(blocks, filenamefilter=lambda name, data: name):
     pray_source = ""
     pray_source += '"en-GB"\n\n'
 
@@ -58,6 +58,9 @@ def pray_to_pray_source(blocks, filenamefilter=lambda name, data: name):
             if isinstance(value, int):
                 pray_source += f'"{_escape(key)}" {value}\n'
                 continue
+            if isinstance(value, pathlib.Path):
+                pray_source += f'"{_escape(key)}" @ "{_escape(str(value))}"\n'
+                continue
 
             assert isinstance(value, str)
             if key.startswith("Script ") and len(value) > 100:
@@ -73,7 +76,10 @@ def pray_to_pray_source(blocks, filenamefilter=lambda name, data: name):
     for (block_type, block_name, data) in sorted(
         data_blocks, key=lambda _: (_[0].lower(), _natural_sort_key(_[1]))
     ):
-        block_output_filename = filenamefilter(block_name, data)
+        if isinstance(data, pathlib.Path):
+            block_output_filename = str(data)
+        else:
+            block_output_filename = filenamefilter(block_name, data)
         pray_source += f'inline {block_type} "{_escape(block_name)}" "{_escape(block_output_filename)}"\n'
 
     return pray_source
@@ -156,7 +162,9 @@ def _lex_pray_source(s):
     return tokens
 
 
-def parse_pray_source(s):
+def parse_pray_source_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        s = f.read()
     t = _lex_pray_source(s)
     p = 0
 
@@ -279,11 +287,6 @@ def parse_pray_source(s):
             raise Exception("Expected 'group' or 'inline', but got {}".format(t[p]))
 
     return blocks
-
-
-def parse_pray_source_file(fname_or_stream):
-    with open_if_not_stream(fname_or_stream, "rb") as f:
-        return parse_pray_source(f.read())
 
 
 def pray_load_file_references(blocks, fileloaderfunc):

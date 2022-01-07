@@ -56,7 +56,7 @@ def main():
 
     blocks = read_pray_file(input_filename)
 
-    pray_source = pray_to_pray_source(blocks, filenamefilter)
+    pray_source = generate_pray_source(blocks, filenamefilter)
 
     output_filename = os.path.join(output_directory, filename_root + ".pray.txt")
     print(f"Writing {output_filename}")

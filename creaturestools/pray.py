@@ -47,6 +47,9 @@ def _parse_tag_data(data):
 
 def iter_pray_file_raw(fname_or_stream):
     with open_if_not_stream(fname_or_stream, "rb") as f:
+        if not hasattr(f, "peek"):
+            f = better_peekable_stream(f)
+
         magic = read_exact(f, 4)
         if magic != b"PRAY":
             raise ReadError(
