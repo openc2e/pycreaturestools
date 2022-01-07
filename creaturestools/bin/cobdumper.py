@@ -22,8 +22,10 @@ def main():
 
     cob = creaturestools.cobs.read_cob1_file(cob_filename)
     if rcb_filename:
+        print("* Found RemoveCoB file: {}".format(rcb_filename))
         rcb = creaturestools.cobs.read_cob1_file(rcb_filename)
     else:
+        print("* Couldn't find RemoveCoB file")
         rcb = False
 
     sprite_filename = filename_root + ".png"
@@ -38,9 +40,12 @@ def main():
     s += "*# C1-Name {!r}\n".format(cob.name)
     s += "*# Cob File = {!r}\n".format(filename_root + ".cob")
     s += "*# Quantity Available = {}\n".format(cob.quantity_available)
-    s += "*# Quantity Used = {}\n".format(cob.quantity_used)
-    s += "*# Sprinkle = {}\n".format(str(cob.sprinkle).lower())
-    s += "*# Expiry Date = {}-{}-{}\n".format(*cob.expiration_date)
+    if cob.quantity_used:
+        s += "*# Quantity Used = {}\n".format(cob.quantity_used)
+    if cob.sprinkle:
+        s += "*# Sprinkle = {}\n".format(str(cob.sprinkle).lower())
+    if cob.expiration_date != (0, 0, 0):
+        s += "*# Expiry Date = {}-{}-{}\n".format(*cob.expiration_date)
     s += "*# Thumbnail = {!r}\n".format(sprite_filename)
     s += "*# Description = {!r}\n".format(cob.description)
     s += "\n"
