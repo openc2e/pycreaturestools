@@ -3,7 +3,7 @@ Python tools for working with the [_Creatures_](https://creatures.wiki/) series 
 ## File types
 
 File types supported:
-- Creatures 0 SPR images (read only)
+- Creatures 0 SPR images (read only, including 0–127.SPR)
 - SPR images (read+write, including back.spr)
 - S16 images (read+write, including back.s16)
 - C16 images (read+write)
