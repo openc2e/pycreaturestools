@@ -3,6 +3,7 @@ Python tools for working with the [_Creatures_](https://creatures.wiki/) series 
 ## File types
 
 File types supported:
+- Creatures 0 SPR images (read only)
 - SPR images (read+write, including back.spr)
 - S16 images (read+write, including back.s16)
 - C16 images (read+write)
@@ -74,7 +75,9 @@ Available tools:
 - `generate_pray_source(blocks, Optional[filenamefunc]) -> str`
 
 **creaturestools.sprites**
-- `read_spr_file(fname_or_stream) -> List[PIL.Image]`
+- `read_palette_dta_file(fname_or_stream) -> PIL.ImagePalette.ImagePalette`
+- `read_creatures0_spr_file(fname_or_stream, Optional[palette]) -> List[PIL.Image]`
+- `read_spr_file(fname_or_stream, Optional[palette]) -> List[PIL.Image]`
 - `read_s16_file(fname_or_stream) -> List[PIL.Image]`
 - `read_c16_file(fname_or_stream) -> List[PIL.Image]`
 - `read_blk_file(fname_or_stream) -> PIL.Image`
@@ -82,5 +85,10 @@ Available tools:
 - `write_c16_file(fname_or_stream, List[PIL.Image])`
 - `write_spr_file(fname_or_stream, List[PIL.Image])`
 - `write_blk_file(fname_or_stream, PIL.Image)`
-- `stitch_to_sheet(List[PIL.Image]) -> PIL.Image`
-- `CREATURES1_PALETTE: int[256 * 3]`
+- `stitch_to_sheet(images) -> PIL.Image`
+- `is_creatures0_sprite_file(fname_or_stream) -> bool`
+- `is_creatures0_sprite_background_piece(images) -> bool`
+- `stitch_creatures0_sprite_background(images) -> PIL.Image`
+- `CREATURES1_PALETTE: PIL.ImagePalette.ImagePalette`
+- `CREATURES0_PALETTE: PIL.ImagePalette.ImagePalette` (from PALETTE.DTA, Creatures 0 has additional palettes 0.PAL–4.PAL)
+- `CREATURES0_SPRITE_BACKGROUND_PIECE_NAMES: [str]`
