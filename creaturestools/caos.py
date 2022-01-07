@@ -4,7 +4,7 @@ def format_c1_caos(script):
     indent = 0
     for command in commands:
         word = command.strip().split(" ")[0].lower()
-        if word in ("else", "endi", "endm", "next", "repe", "retn", "untl"):
+        if word in ("else", "endi", "endm", "ever", "next", "repe", "retn", "untl"):
             indent -= 1
             # TODO: error if we went below 0?
         if word == "subr":
