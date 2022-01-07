@@ -13,6 +13,7 @@ File types supported:
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
+- CreaturesArchive compression wrapper (read only)
 
 ## Command-line Tools
 
@@ -56,6 +57,9 @@ Available tools:
 
 **creaturestools.cobs**
 - `read_cob1_file(fname_or_stream) -> creaturestools.cobs.Cob1File`
+
+**creaturestools.creaturesarchive**
+- `decompress_creaturesarchive_compressed_file(fname_or_stream) -> bytes`
 
 **creaturestools.genetics**
 - `read_gen3_file(fname_or_stream) -> List[creaturestools.genetics.Gene]`
