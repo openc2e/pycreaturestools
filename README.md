@@ -14,6 +14,7 @@ File types supported:
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
 - CreaturesArchive compression wrapper (read only)
+- PCAP files (read only, used for reverse-engineering NetBabel network dumps)
 
 ## Command-line Tools
 
