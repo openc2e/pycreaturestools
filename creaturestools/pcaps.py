@@ -235,7 +235,9 @@ class TimestampedReader:
         ret = b""
         while len(ret) < n:
             if not self._packets:
-                raise Exception("Expected {} bytes, but only got {}".format(n, ret))
+                raise EOFError(
+                    "Requested {} bytes, but only got {}: {}".format(n, len(ret), ret)
+                )
             need = n - len(ret)
             ret += self._packets[0][1][:need]
             self._packets[0] = (self._packets[0][0], self._packets[0][1][need:])

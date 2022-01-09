@@ -18,6 +18,10 @@ PRAY_TAG_BLOCK_TYPES = (
     "SFAM",  # C3 starter family
     "EGGS",  # eggs
     "DFAM",  # DS starter family
+    "warp",  # NetBabel warped creature info
+    "CHAT",  # NetBabel chat message
+    "REQU",  # NetBabel chat request
+    "MESG",  # NetBabel
 )
 
 
