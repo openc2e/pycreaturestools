@@ -50,6 +50,24 @@ def read_u32le(f):
     return struct.unpack("<I", read_exact(f, 4))[0]
 
 
+def read_u32be(f):
+    return struct.unpack(">I", read_exact(f, 4))[0]
+
+
+def read_s32le(f):
+    return struct.unpack("<i", read_exact(f, 4))[0]
+
+
+def read_null_terminated_string(r):
+    s = b""
+    while True:
+        buf = read_exact(r, 1)
+        if buf[0] == 0:
+            break
+        s += buf
+    return s
+
+
 def read_cstring(f):
     length = read_u8(f)
     if length == 0xFF:

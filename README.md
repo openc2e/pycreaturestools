@@ -67,6 +67,10 @@ Available tools:
 - `SVRULE3_OPCODES: Mapping[int, str]`
 - `SVRULE3_OPERAND_TYPES: Mapping[int, str]`
 
+**creaturestools.pcaps**
+- `read_pcap_file(fname_or_stream) -> Dict[(source_addr, dest_addr): List[(timestamp, tcp_data)]]`
+- `TimestampedReader(List[(timestamp, tcp_data)]]) -> TimestampedReader`
+
 **creaturestools.pray**
 - `read_pray_file(fname_or_stream) -> List[(block_name, block_type, data)]` (block data is either `bytes` or a `dict[str, Union[int: str]]`)
 - `write_pray_file(fname_or_stream, blocks, compression=9)`
