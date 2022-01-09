@@ -35,6 +35,7 @@ Available tools:
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - **spritedumper**: Takes a sprite (SPR, S16, C16, BLK, or "Creatures 0" SPR) and writes out the frames as PNGs
+- babeldump: Parses a .pcap file with NetBabel messages
 - caossyntaxdumper: Parses a caos.syntax file
 - creaturescavesdownloader: Downloads files from Creatures Caves
 - creaturescavesextractor: Extracts files downloaded from Creatures Caves
