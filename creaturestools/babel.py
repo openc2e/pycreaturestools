@@ -120,6 +120,7 @@ def parse_netbabel_server10_net_line_response(f, header):
         pass
 
     # one of the message types that doesn't use payload length in the header...
+    _check_matches("payload_length", header.payload_length, 0)
     msg = NetBabelServer10NetLineResponse()
     msg.unknown1 = read_u32le(f)
     msg.unknown2 = read_u32le(f)
@@ -152,20 +153,30 @@ def parse_netbabel_server10_net_line_response(f, header):
     return msg
 
 
+class NetBabelServer13Message(_AutoRepr):
+    pass
+
+
 def parse_netbabel_server13(f, header):
-    class NetBabelServer13Message(_AutoRepr):
-        pass
+    # in response to client16
+    # same as server15?
+    # "yes, you will receive notifications for user (whose-wanted registry)"?
 
     f = io.BytesIO(read_exact(f, header.payload_length))
 
     msg = NetBabelServer13Message()
-    msg.payload_length = read_u32le(f)
+    payload_length = read_u32le(f)
+    _check_matches("payload_length", payload_length, header.payload_length)
     msg.user_id = read_u32le(f)
     msg.user_hid = read_u16le(f)
-    msg.unknown4 = read_u16le(f)
+    maybe_uninitialized_stack_memory = read_exact(f, 2)
     _check_matches("user_id", msg.user_id, header.user_id)
     _check_matches("user_hid", msg.user_hid, header.user_hid)
-    _check_matches("unknown4", msg.unknown4, 52428)
+    _check_matches(
+        "maybe_uninitialized_stack_memory",
+        maybe_uninitialized_stack_memory,
+        b"\xcc\xcc",
+    )
     firstname_length = read_u32le(f)
     lastname_length = read_u32le(f)
     nickname_length = read_u32le(f)
@@ -210,9 +221,16 @@ def parse_netbabel_server15_net_unik_response(f, header):
     msg = NetBabelServer15UnikResponse()
     payload_length = read_u32le(f)
     _check_matches("payload_length", payload_length, header.payload_length)
-    msg.unknown2 = read_u32le(f)
-    msg.unknown3 = read_u16le(f)
-    msg.unknown4 = read_u16le(f)
+    msg.user_id = read_u32le(f)
+    msg.user_hid = read_u16le(f)
+    _check_matches("user_id", msg.user_id, header.user_id)
+    _check_matches("user_hid", msg.user_hid, header.user_hid)
+    maybe_uninitialized_stack_memory = read_exact(f, 2)
+    _check_matches(
+        "maybe_uninitialized_stack_memory",
+        maybe_uninitialized_stack_memory,
+        b"\xcc\xcc",
+    )
     firstname_length = read_u32le(f)
     lastname_length = read_u32le(f)
     nickname_length = read_u32le(f)
@@ -224,21 +242,25 @@ def parse_netbabel_server15_net_unik_response(f, header):
     return msg
 
 
+class NetBabelServer19UlinResponse(_AutoRepr):
+    pass
+
+
 def parse_netbabel_server19_net_ulin_response(f, header):
     # if the header is zeroes, user is offline
-
-    class NetBabelServer19UlinResponse(_AutoRepr):
-        pass
-
     _check_matches("payload_length", header.payload_length, 0)
+    _check_matches("unknown1", header.unknown1, 0)
+    _check_matches("unknown2", header.unknown2, (0, 10))
+    _check_matches("unknown3", header.unknown3, 0)
     msg = NetBabelServer19UlinResponse()
     return msg
 
 
-def parse_netbabel_server24_net_stat_response(f, header):
-    class NetBabelServer24StatResponse(_AutoRepr):
-        pass
+class NetBabelServer24StatResponse(_AutoRepr):
+    pass
 
+
+def parse_netbabel_server24_net_stat_response(f, header):
     # one of the message types that doesn't use payload length in the header...
     msg = NetBabelServer24StatResponse()
     msg.milliseconds_online = read_u32le(f)
@@ -310,51 +332,114 @@ def parse_netbabel_client9_pray(f, header):
     return msg
 
 
-def parse_netbabel_client15_net_unik_request(f, header):
-    class NetBabelClient15NetUnikRequest(_AutoRepr):
-        pass
+class NetBabelClient15NetUnikRequest(_AutoRepr):
+    pass
 
+
+def parse_netbabel_client15_net_unik_request(f, header):
     _check_matches("payload_length", header.payload_length, 0)
     msg = NetBabelClient15NetUnikRequest()
     return msg
 
 
+class NetBabelClient16Message(_AutoRepr):
+    pass
+
+
 def parse_netbabel_client16(f, header):
     # NetBabel client message type 16
     # guess it's just empty?
-    # sent twice after NetLineResponse
-    # sent once after NetBabelServer9PrayMessage (with user_id read from message)
-    class NetBabelClient16Message(_AutoRepr):
-        pass
+    # sent when configuring warp chamber to send to "Any on-line user", and followed by a NetBabelClient19UlinRequest
+    # expects a server13 if message is expected
 
     _check_matches("payload_length", header.payload_length, 0)
+    _check_matches("request_id", header.request_id, 0)
     msg = NetBabelClient16Message()
     return msg
 
 
-def parse_netbabel_client19_net_ulin_request(f, header):
-    class NetBabelClient19UlinRequest(_AutoRepr):
-        pass
+class NetBabelClient17Message(_AutoRepr):
+    pass
 
+
+def parse_netbabel_client17(f, header):
+    # NetBabel client message type 17
+    # "remove user from whose-wanted list"?
+    # net: whof, net: whoz
+
+    _check_matches("payload_length", header.payload_length, 0)
+    _check_matches("request_id", header.request_id, 0)
+    msg = NetBabelClient17Message()
+    return msg
+
+
+class NetBabelClient19UlinRequest(_AutoRepr):
+    pass
+
+
+def parse_netbabel_client19_net_ulin_request(f, header):
     _check_matches("payload_length", header.payload_length, 0)
     msg = NetBabelClient19UlinRequest()
     return msg
 
 
-def parse_netbabel_client24_net_stat_request(f, header):
-    class NetBabelClient24StatRequest(_AutoRepr):
-        pass
+class NetBabelClient20Message(_AutoRepr):
+    pass
 
+
+def parse_netbabel_client20(f, header):
+    # sent by client after "net: writ" when server responds with a server30 ... but what is the expected response?
+    # one of the message types that doesn't use payload length in the header...
+    _check_matches("payload_length", header.payload_length, 0)
+    _check_matches("request_id", header.request_id, 0)
+    _check_matches("unknown1", header.unknown1, 0)
+    _check_matches("unknown2", header.unknown2, 2)
+    _check_matches("unknown3", header.unknown3, 10)
+    msg = NetBabelClient20Message()
+    msg.unknown1 = read_u32le(f)
+    _check_matches("unknown1", msg.unknown1, 14)
+    return msg
+
+
+class NetBabelClient24StatRequest(_AutoRepr):
+    pass
+
+
+def parse_netbabel_client24_net_stat_request(f, header):
     _check_matches("payload_length", header.payload_length, 0)
     msg = NetBabelClient24StatRequest()
     return msg
 
 
-def parse_netbabel_client37_net_line_request(f, header):
-    class NetBabelClient37NetLineRequest(_AutoRepr):
-        pass
+class NetBabelClient30Message(_AutoRepr):
+    pass
 
+
+def parse_netbabel_client30(f, header):
+    # sent by client when "net: writ" ... but what is the expected response?
     # one of the message types that doesn't use payload length in the header...
+    _check_matches("payload_length", header.payload_length, 0)
+    _check_matches("request_id", header.request_id, 0)
+    _check_matches("unknown1", header.unknown1, 0)
+    _check_matches("unknown2", header.unknown2, 1)
+    _check_matches("unknown3", header.unknown3, 0)
+    msg = NetBabelClient30Message()
+    msg.recipient_id = read_u32le(f)
+    msg.recipient_hid = read_u16le(f)
+    msg.unknown1 = read_u16le(f)
+    msg.unknown2 = read_u32le(f)
+    _check_matches("unknown1", msg.unknown1, 0)
+    _check_matches("unknown2", msg.unknown2, 2)
+    return msg
+
+
+class NetBabelClient37NetLineRequest(_AutoRepr):
+    pass
+
+
+def parse_netbabel_client37_net_line_request(f, header):
+    # one of the message types that doesn't use payload length in the header...
+    _check_matches("payload_length", header.payload_length, 0)
     msg = NetBabelClient37NetLineRequest()
     msg.unknown1 = read_u32le(f)
     msg.unknown2 = read_u32le(f)
@@ -510,8 +595,8 @@ def parse_netbabel_client_message(r):
     header = parse_netbabel_header(r)
 
     _check_matches("NetBabelHeader.unknown1", header.unknown1, (0, 10))
-    _check_matches("NetBabelHeader.unknown2", header.unknown2, (0, 3))
-    _check_matches("NetBabelHeader.unknown3", header.unknown3, 0)
+    _check_matches("NetBabelHeader.unknown2", header.unknown2, (0, 1, 2, 3))
+    _check_matches("NetBabelHeader.unknown3", header.unknown3, (0, 10))
 
     if header.package_type == 9:
         # client message 9: PRAY
@@ -522,10 +607,17 @@ def parse_netbabel_client_message(r):
     elif header.package_type == 16:
         # client message 16
         msg = parse_netbabel_client16(r, header)
+    elif header.package_type == 17:
+        # client message 17
+        msg = parse_netbabel_client17(r, header)
     elif header.package_type == 19:
         msg = parse_netbabel_client19_net_ulin_request(r, header)
+    elif header.package_type == 20:
+        msg = parse_netbabel_client20(r, header)
     elif header.package_type == 24:
         msg = parse_netbabel_client24_net_stat_request(r, header)
+    elif header.package_type == 30:
+        msg = parse_netbabel_client30(r, header)
     elif header.package_type == 37:
         # client message 37: net: line request
         msg = parse_netbabel_client37_net_line_request(r, header)
