@@ -767,3 +767,79 @@ def stitch_creatures0_sprite_background(images):
                 (j * sprwidth, i * sprheight, (j + 1) * sprwidth, (i + 1) * sprheight),
             )
     return newimage
+
+
+def cut_sheet_to_sprites(image, *, colorkey):
+    all_runs = []
+    previous_line_runs = []
+    current_line_runs = []
+
+    class Rect:
+        __slots__ = ("left", "top", "width", "height")
+
+        def __init__(self, left, top, width, height):
+            self.left = left
+            self.top = top
+            self.width = width
+            self.height = height
+
+        def __repr__(self):
+            return "<Rect left={} top={} width={} height={}>".format(
+                self.left, self.top, self.width, self.height
+            )
+
+        @property
+        def bottom(self):
+            return self.top + self.height
+
+        @property
+        def right(self):
+            return self.left + self.width
+
+    for y in range(image.size[1]):
+        x = 0
+        while x < image.size[0]:
+            if image.getpixel((x, y)) == colorkey:
+                x += 1
+                continue
+
+            # found an image, go as far right as we can
+            start_x = x
+            while x < image.size[0] and image.getpixel((x, y)) != colorkey:
+                x += 1
+            end_x = x
+
+            for prev in previous_line_runs:
+                if (start_x >= prev.left and start_x < prev.right) or (
+                    end_x >= prev.left and end_x < prev.right
+                ):
+                    new_left = min(start_x, prev.left)
+                    new_right = max(end_x, prev.right)
+                    prev.left = new_left
+                    prev.width = new_right - new_left
+                    prev.height += 1
+                    current_line_runs.append(prev)
+                    break
+            else:
+                new_rect = Rect(start_x, y, end_x - start_x, 1)
+                all_runs.append(new_rect)
+                current_line_runs.append(new_rect)
+
+            x += 1
+
+        previous_line_runs, current_line_runs = current_line_runs, []
+
+    images = []
+    for rect in all_runs:
+        images.append(image.crop((rect.left, rect.top, rect.right, rect.bottom)))
+
+    return images
+
+
+def find_sprite_sheet_colorkey(image, *, width=5, height=5):
+    top_left = [image.getpixel((x, y)) for x in range(5) for y in range(5)]
+    if top_left[0] not in (0, (0, 0, 0), (0, 0, 0, 0)) and all(
+        _ == top_left[0] for _ in top_left
+    ):
+        return top_left[0]
+    return None

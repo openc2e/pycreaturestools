@@ -8,7 +8,7 @@ File types supported:
 - S16 images (read+write, including back.s16)
 - C16 images (read+write)
 - BLK images (read+write, macOS big-endian version not supported)
-- PNG spritesheets (write only)
+- Spritesheets (read+write)
 - Creatures 1 COB/RCB files (read only)
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
@@ -37,6 +37,8 @@ Available tools:
 - **praybuilder**: Parse a PRAY source file and writes an AGENTS file
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
+- **spritebuilder**: Takes a spritesheet image and converts it into a C16 sprite file
+- **spritecutter**: Takes a spritesheet image and writes out the individual sprites as PNGs
 - **spritedumper**: Takes a sprite (SPR, S16, C16, BLK, or "Creatures 0" SPR) and writes out the frames as PNGs
 - babeldump: Parses a .pcap file with NetBabel messages
 - caossyntaxdumper: Parses a caos.syntax file
@@ -119,6 +121,8 @@ Available tools:
 - `write_spr_file(fname_or_stream, List[PIL.Image])`
 - `write_blk_file(fname_or_stream, PIL.Image)`
 - `stitch_to_sheet(images) -> PIL.Image`
+- `cut_sheet_to_sprites(image, *, colorkey) -> List[PIL.Image]`
+- `find_sprite_sheet_colorkey(image, *, width=5, height=5) -> Optional[colorkey]`
 - `is_creatures0_sprite_file(fname_or_stream) -> bool`
 - `is_creatures0_sprite_background_piece(images) -> bool`
 - `stitch_creatures0_sprite_background(images) -> PIL.Image`
