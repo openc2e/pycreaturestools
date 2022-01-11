@@ -43,6 +43,8 @@ def main():
         # TODO: what if it's a BLK?
         print("Reading {} as spritesheet".format(input_filenames[0]))
         image = PIL.Image.open(input_filenames[0])
+        # TODO: always necessary to convert to RGB? what if the palette looks fine?
+        image = image.convert("RGB")
         colorkey = find_sprite_sheet_colorkey(image)
         if not colorkey:
             raise Exception(
