@@ -9,7 +9,8 @@ File types supported:
 - C16 images (read+write)
 - BLK images (read+write, macOS big-endian version not supported)
 - Spritesheets (read+write)
-- Creatures 1 COB/RCB files (read only)
+- COB/RCB files (read only)
+- COB2 files (read only)
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
@@ -32,7 +33,7 @@ spritedumper my_sprite.c16
 
 Available tools:
 - **babeldump**: Parses a PCAP file containing NetBabel messages
-- **cobdumper**: Takes a C1 COB/RCB and writes a CAOS2Cob script and PNG of the thumbnail
+- **cobdumper**: Takes a C1 COB/RCB or C2 COB and decompiles it
 - **gen2json**: Parses a GEN file and outputs a JSON representation
 - **praybuilder**: Parse a PRAY source file and writes an AGENTS file
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
@@ -82,9 +83,14 @@ Available tools:
 
 **creaturestools.caos**
 - `format_c1_caos(str) -> str`
+- `format_c2_caos(str) -> str`
 
 **creaturestools.cobs**
-- `read_cob1_file(fname_or_stream) -> creaturestools.cobs.Cob1File`
+- `read_cob1_file(fname_or_stream) -> Cob1File`
+- `generate_caos2cob1_source(cob, rcb, Optional[filenamefunc]) -> str`
+- `is_cob2_file(fname_or_stream) -> bool`
+- `read_cob2_file(fname_or_stream) -> List[Union[Cob2AgntBlock, Cob2FileBlock, Cob2AuthBlock]]`
+- `generate_cob2_source(blocks, Optional[filenamefunc]) -> str`
 
 **creaturestools.creaturesarchive**
 - `decompress_creaturesarchive_compressed_file(fname_or_stream) -> bytes`
