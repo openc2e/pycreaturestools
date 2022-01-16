@@ -92,6 +92,14 @@ Available tools:
 - `read_cob2_file(fname_or_stream) -> List[Union[Cob2AgntBlock, Cob2FileBlock, Cob2AuthBlock]]`
 - `generate_cob2_source(blocks, Optional[filenamefunc]) -> str`
 
+**creaturestools.creatures0**
+- `read_creatures0_spr_file(fname_or_stream, Optional[palette]) -> List[PIL.Image]`
+- `is_creatures0_sprite_file(fname_or_stream) -> bool`
+- `is_creatures0_sprite_background_piece(images) -> bool`
+- `stitch_creatures0_sprite_background(images) -> PIL.Image`
+- `CREATURES0_PALETTE: PIL.ImagePalette.ImagePalette` (from PALETTE.DTA, Creatures 0 has additional palettes 0.PAL–4.PAL)
+- `CREATURES0_SPRITE_BACKGROUND_PIECE_NAMES: [str]`
+
 **creaturestools.creaturesarchive**
 - `decompress_creaturesarchive_compressed_file(fname_or_stream) -> bytes`
 
@@ -117,7 +125,6 @@ Available tools:
 
 **creaturestools.sprites**
 - `read_palette_dta_file(fname_or_stream) -> PIL.ImagePalette.ImagePalette`
-- `read_creatures0_spr_file(fname_or_stream, Optional[palette]) -> List[PIL.Image]`
 - `read_spr_file(fname_or_stream, Optional[palette]) -> List[PIL.Image]`
 - `read_s16_file(fname_or_stream) -> List[PIL.Image]`
 - `read_c16_file(fname_or_stream) -> List[PIL.Image]`
@@ -129,9 +136,4 @@ Available tools:
 - `stitch_to_sheet(images) -> PIL.Image`
 - `cut_sheet_to_sprites(image, *, colorkey) -> List[PIL.Image]`
 - `find_sprite_sheet_colorkey(image, *, width=5, height=5) -> Optional[colorkey]`
-- `is_creatures0_sprite_file(fname_or_stream) -> bool`
-- `is_creatures0_sprite_background_piece(images) -> bool`
-- `stitch_creatures0_sprite_background(images) -> PIL.Image`
 - `CREATURES1_PALETTE: PIL.ImagePalette.ImagePalette`
-- `CREATURES0_PALETTE: PIL.ImagePalette.ImagePalette` (from PALETTE.DTA, Creatures 0 has additional palettes 0.PAL–4.PAL)
-- `CREATURES0_SPRITE_BACKGROUND_PIECE_NAMES: [str]`

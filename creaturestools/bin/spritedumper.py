@@ -4,6 +4,7 @@ import sys
 
 from PIL import Image
 
+from creaturestools.creatures0 import *
 from creaturestools.sprites import *
 
 
