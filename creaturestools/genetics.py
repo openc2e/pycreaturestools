@@ -476,16 +476,16 @@ def read_gen3_file(fname_or_stream):
                     value = read_u16be(f)
                 elif typ == padding5:
                     value = read_exact(f, 5)
-                    if value != b"\0" * 5:
-                        raise ReadError(
-                            "Expected padding to be zeros, but got {}".format(value)
-                        )
+                    # if value != b"\0" * 5:
+                    #     raise ReadError(
+                    #         "Expected padding to be zeros, but got {}".format(value)
+                    #     )
                 elif typ == padding7:
                     value = read_exact(f, 7)
-                    if value != b"\0" * 7:
-                        raise ReadError(
-                            "Expected padding to be zeros, but got {}".format(value)
-                        )
+                    # if value != b"\0" * 7:
+                    #     raise ReadError(
+                    #         "Expected padding to be zeros, but got {}".format(value)
+                    #     )
                 elif typ == bytes4:
                     value = read_exact(f, 4)
                 elif typ == bytes16:
