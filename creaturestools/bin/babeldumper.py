@@ -1,6 +1,6 @@
 import sys
 
-from creaturestools.babel import *
+from creaturestools.netbabel import *
 from creaturestools.pcaps import *
 
 

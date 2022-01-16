@@ -41,7 +41,6 @@ Available tools:
 - **spritebuilder**: Takes a spritesheet image and converts it into a C16 sprite file
 - **spritecutter**: Takes a spritesheet image and writes out the individual sprites as PNGs
 - **spritedumper**: Takes a sprite (SPR, S16, C16, BLK, or "Creatures 0" SPR) and writes out the frames as PNGs
-- babeldump: Parses a .pcap file with NetBabel messages
 - caossyntaxdumper: Parses a caos.syntax file
 - creaturescavesdownloader: Downloads files from Creatures Caves
 - creaturescavesextractor: Extracts files downloaded from Creatures Caves
@@ -58,28 +57,6 @@ Available tools:
 - translate_voice: Converts a string of text into Creatures sounds
 
 ## Library API
-
-**creaturestools.babel**
-- `parse_netbabel_client_message(f) -> NetBabelClientMessage`
-- `parse_netbabel_server_message(f) -> NetBabelServerMessage`
-- `parse_netbabel_header(f) -> NetBabelHeader`
-- `parse_netbabel_server9_pray(f, header) -> NetBabelServer9PrayMessage`
-- `parse_netbabel_server10_net_line_response(f, header) -> NetBabelServer10NetLineResponse`
-- `parse_netbabel_server13(f, header) -> NetBabelServer13Message`
-- `parse_netbabel_server14(f, header) -> NetBabelServer14Message`
-- `parse_netbabel_server15_net_unik_response(f, header) -> NetBabelServer15UnikResponse`
-- `parse_netbabel_server19_net_ulin_response(f, header) -> NetBabelServer19UlinResponse`
-- `parse_netbabel_server24_net_stat_response(f, header) -> NetBabelServer24StatResponse`
-- `parse_netbabel_server545_net_ruso_response(f, header) -> NetBabelServer545RusoResponse`
-- `parse_netbabel_server801_creature_history_response(f, header) -> NetBabelServer801CreatureHistoryResponse`
-- `parse_netbabel_client9_pray(f, header) -> NetBabelClient9PrayMessage`
-- `parse_netbabel_client15_net_unik_request(f, header) -> NetBabelClient15NetUnikRequest`
-- `parse_netbabel_client16(f, header) -> NetBabelClient16Message`
-- `parse_netbabel_client19_net_ulin_request(f, header) -> NetBabelClient19UlinRequest`
-- `parse_netbabel_client24_net_stat_request(f, header) -> NetBabelClient24StatRequest`
-- `parse_netbabel_client37_net_line_request(f, header) -> NetBabelClient37NetLineRequest`
-- `parse_netbabel_client545_net_ruso_request(f, header) -> NetBabelClient545RusoRequest`
-- `parse_netbabel_client801_creature_history(r, header) -> NetBabelClient801CreatureHistory`
 
 **creaturestools.caos**
 - `format_c1_caos(str) -> str`
@@ -108,6 +85,28 @@ Available tools:
 - `svrule3_from_bytes(bytes[48]) -> List[str]`
 - `SVRULE3_OPCODES: Mapping[int, str]`
 - `SVRULE3_OPERAND_TYPES: Mapping[int, str]`
+
+**creaturestools.netbabel**
+- `parse_netbabel_client_message(f) -> NetBabelClientMessage`
+- `parse_netbabel_server_message(f) -> NetBabelServerMessage`
+- `parse_netbabel_header(f) -> NetBabelHeader`
+- `parse_netbabel_server9_pray(f, header) -> NetBabelServer9PrayMessage`
+- `parse_netbabel_server10_net_line_response(f, header) -> NetBabelServer10NetLineResponse`
+- `parse_netbabel_server13(f, header) -> NetBabelServer13Message`
+- `parse_netbabel_server14(f, header) -> NetBabelServer14Message`
+- `parse_netbabel_server15_net_unik_response(f, header) -> NetBabelServer15UnikResponse`
+- `parse_netbabel_server19_net_ulin_response(f, header) -> NetBabelServer19UlinResponse`
+- `parse_netbabel_server24_net_stat_response(f, header) -> NetBabelServer24StatResponse`
+- `parse_netbabel_server545_net_ruso_response(f, header) -> NetBabelServer545RusoResponse`
+- `parse_netbabel_server801_creature_history_response(f, header) -> NetBabelServer801CreatureHistoryResponse`
+- `parse_netbabel_client9_pray(f, header) -> NetBabelClient9PrayMessage`
+- `parse_netbabel_client15_net_unik_request(f, header) -> NetBabelClient15NetUnikRequest`
+- `parse_netbabel_client16(f, header) -> NetBabelClient16Message`
+- `parse_netbabel_client19_net_ulin_request(f, header) -> NetBabelClient19UlinRequest`
+- `parse_netbabel_client24_net_stat_request(f, header) -> NetBabelClient24StatRequest`
+- `parse_netbabel_client37_net_line_request(f, header) -> NetBabelClient37NetLineRequest`
+- `parse_netbabel_client545_net_ruso_request(f, header) -> NetBabelClient545RusoRequest`
+- `parse_netbabel_client801_creature_history(r, header) -> NetBabelClient801CreatureHistory`
 
 **creaturestools.pcaps**
 - `read_pcap_file(fname_or_stream) -> Dict[(source_addr, dest_addr): List[(timestamp, tcp_data)]]`
