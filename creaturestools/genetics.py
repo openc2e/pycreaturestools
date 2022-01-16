@@ -59,6 +59,11 @@ class UnknownGene:
 
 
 @_SimpleClass
+class NonGeneData:
+    data: bytes
+
+
+@_SimpleClass
 class BrainLobeGene:
     header: GeneHeader
     lobe: bytes4
@@ -405,14 +410,16 @@ def read_gen3_file(fname_or_stream):
 
         genes = []
         while True:
-            marker = read_exact(f, 4)
-            if marker not in (b"gene", b"gend"):
-                raise ReadError(
-                    "Expected marker to be b'gene' or b'gend', but got {}".format(
-                        marker
-                    )
-                )
 
+            unknown_data = b""
+            while peek_exact(f, 4) not in (b"gene", b"gend"):
+                unknown_data += read_exact(f, 1)
+            if unknown_data:
+                gene = NonGeneData()
+                gene.data = unknown_data
+                genes.append(gene)
+
+            marker = read_exact(f, 4)
             if marker == b"gend":
                 break
 

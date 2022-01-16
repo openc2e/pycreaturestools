@@ -20,8 +20,9 @@ def main():
     for gene in genes:
         data = {
             "_type": type(gene).__name__,
-            "header": {_: getattr(gene.header, _) for _ in gene.header.__slots__},
         }
+        if hasattr(gene, "header"):
+            data["header"] = {_: getattr(gene.header, _) for _ in gene.header.__slots__}
         for _ in gene.__slots__:
             if _ == "header":
                 continue
