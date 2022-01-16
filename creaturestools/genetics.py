@@ -38,6 +38,7 @@ bytes4 = NewType("bytes4", bytes)
 bytes16 = NewType("bytes16", bytes)
 bytes32 = NewType("bytes32", bytes)
 svrule48 = NewType("svrule48", bytes)
+signedfloat8 = NewType("signedfloat8", float)
 
 
 @_SimpleClass
@@ -197,13 +198,13 @@ class CreatureStimulusGene:
     intensity: u8
     features: u8
     chemical0: u8
-    amount0: u8
+    amount0: signedfloat8
     chemical1: u8
-    amount1: u8
+    amount1: signedfloat8
     chemical2: u8
-    amount2: u8
+    amount2: signedfloat8
     chemical3: u8
-    amount3: u8
+    amount3: signedfloat8
 
 
 @_SimpleClass
@@ -493,6 +494,8 @@ def read_gen3_file(fname_or_stream):
                     value = read_exact(f, 32)
                 elif typ == svrule48:
                     value = svrule3_from_bytes(read_exact(f, 48))
+                elif typ == signedfloat8:
+                    value = min(read_u8(f), 248) / 124.0 - 1
                 elif typ == bytes:
                     value = b""
                     while peek_exact(f, 4) not in (b"gene", b"gend"):
