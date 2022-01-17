@@ -64,7 +64,9 @@ def generate_pray_source(blocks, filenamefilter=lambda name, data: name):
                 continue
 
             assert isinstance(value, str)
-            if key.startswith("Script ") and len(value) > 100:
+            if (key.startswith("Script ") or key == "Remove script") and len(
+                value
+            ) > 100:
                 value = value.encode("utf-8")  # I guess?
                 block_output_filename = filenamefilter(f"{block_name}_{key}.cos", value)
                 pray_source += (

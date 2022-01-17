@@ -44,8 +44,9 @@ def main():
                 elif ext == ".blk":
                     image = read_blk_file(data)
 
-                relative_filename = _replace_ext(relative_filename, ".png")
-                output_filename = os.path.join(output_directory, relative_filename)
+                output_filename = os.path.join(
+                    output_directory, _replace_ext(relative_filename, ".png")
+                )
                 print(f"Writing {output_filename}")
                 image.save(output_filename)
                 return relative_filename
