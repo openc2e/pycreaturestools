@@ -5,6 +5,8 @@ import sys
 import PIL.Image
 
 from creaturestools._io_utils import *
+from creaturestools._simplelexer import *
+from creaturestools.caos2pray import *
 from creaturestools.exceptions import *
 from creaturestools.pray import *
 from creaturestools.praysource import *
@@ -68,6 +70,11 @@ def main():
         output_filename += ".agents"
     input_dirname = os.path.dirname(input_filename)
 
+    if input_filename.suffix.lower() == ".cos":
+        blocks = parse_caos2pray_source_file(input_filename)
+    else:
+        blocks = parse_pray_source_file(input_filename)
+
     def fileloaderfunc(filename):
         filename = input_dirname / pathlib.Path(filename)
 
@@ -82,7 +89,6 @@ def main():
 
         raise FileNotFoundError(filename)
 
-    blocks = parse_pray_source_file(input_filename)
     for (block_type, block_name, data) in blocks:
         print(f'block {block_type} "{block_name}"')
     loadedblocks = pray_load_file_references(blocks, fileloaderfunc)

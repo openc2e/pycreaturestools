@@ -14,6 +14,7 @@ File types supported:
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
+- CAOS2PRAY source files (read)
 - CreaturesArchive compression wrapper (read only)
 - NetBabel (read only, most message types except NET: WRIT)
 - PCAP files (read only, used for reading NetBabel packet captures)
@@ -33,9 +34,10 @@ spritedumper my_sprite.c16
 
 Available tools:
 - **babeldump**: Parses a PCAP file containing NetBabel messages
+- **caos2praybuilder**: Alias for *praybuilder*.
 - **cobdumper**: Takes a C1 COB/RCB or C2 COB and decompiles it
 - **gen2json**: Parses a GEN file and outputs a JSON representation
-- **praybuilder**: Parse a PRAY source file and writes an AGENTS file
+- **praybuilder**: Parses a PRAY or CAOS2PRAY file and builds an AGENTS file.
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - **spritebuilder**: Takes a spritesheet image and converts it into a C16 sprite file
