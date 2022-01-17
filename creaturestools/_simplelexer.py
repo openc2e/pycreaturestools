@@ -59,6 +59,11 @@ def simplelexer(s):
             p += 1
             tokens.append(("equals", s[basep:p]))
             continue
+        # question
+        elif s[p : p + 1] == "?":
+            p += 1
+            tokens.append(("?", s[basep:p]))
+            continue
         # strings
         elif s[p : p + 1] == '"':
             p += 1

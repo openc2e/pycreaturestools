@@ -3,6 +3,7 @@ Python tools for working with the [_Creatures_](https://creatures.wiki/) series 
 ## File types
 
 File types supported:
+- ATT body data files (read only, including Creatures Village's i20a.att with notes)
 - Creatures 0 SPR images (read only, including 0–127.SPR)
 - SPR images (read+write, including back.spr)
 - S16 images (read+write, including back.s16)
@@ -59,6 +60,9 @@ Available tools:
 - translate_voice: Converts a string of text into Creatures sounds
 
 ## Library API
+
+**creaturestools.bodydata**
+- `read_att_file(fname_or_stream) -> (List[List[(x, y)]], notes)`
 
 **creaturestools.caos**
 - `format_c1_caos(str) -> str`
