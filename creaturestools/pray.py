@@ -155,13 +155,12 @@ def write_pray_file(fname_or_stream, blocks, compression=9):
         write_all(f, b"PRAY")
 
         for (block_type, block_name, data) in blocks:
-
             write_all(f, block_type.encode("ascii"))
             write_all(f, (block_name + (128 - len(block_name)) * "\0").encode("cp1252"))
 
             if isinstance(data, dict):
                 data = _encode_pray_tags(data)
-            if not isinstance(data, bytes):
+            if not isinstance(data, (bytes, memoryview)):
                 raise ValueError(
                     "Can't write pray block data of type {!r}".format(data)
                 )

@@ -1,3 +1,4 @@
+import pathlib
 import struct
 from contextlib import contextmanager
 
@@ -9,7 +10,7 @@ def _nullcontext(enter_result):
 
 
 def open_if_not_stream(f, mode):
-    if isinstance(f, (str, bytes)):
+    if isinstance(f, (str, bytes, pathlib.Path)):
         return open(f, mode)
     else:
         return _nullcontext(f)

@@ -15,9 +15,10 @@ def main():
     opts = argparse.ArgumentParser()
     opts.add_argument("files", nargs="+")
     opts.add_argument(
-        "--convert-images",
-        action="store_true",
-        help="Convert sprites into .png files",
+        "--no-convert-images",
+        dest="convert_images",
+        action="store_false",
+        help="Don't convert sprites into .png files",
     )
     args = opts.parse_args()
 
