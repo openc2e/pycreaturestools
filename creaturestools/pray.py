@@ -150,7 +150,7 @@ def _encode_pray_tags(data):
     return bytes(out.getbuffer())
 
 
-def write_pray_file(fname_or_stream, blocks, compression=9):
+def write_pray_file(fname_or_stream, blocks, compression=zlib.Z_DEFAULT_COMPRESSION):
     with open_if_not_stream(fname_or_stream, "wb") as f:
         write_all(f, b"PRAY")
 
