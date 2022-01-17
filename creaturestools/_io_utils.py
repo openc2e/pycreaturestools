@@ -86,10 +86,12 @@ def read_u32le_prefixed_string(f):
 
 
 def write_all(f, value):
+    itemsize = getattr(value, "itemsize", 1)
     while value:
         n = f.write(value)
         assert n > 0
-        value = value[n:]
+        assert n % itemsize == 0
+        value = value[n // itemsize :]
 
 
 def write_u16le(f, value):

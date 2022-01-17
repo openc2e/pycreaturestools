@@ -1,6 +1,7 @@
 import array
 import io
 import struct
+import sys
 
 from PIL import Image
 from PIL.ImagePalette import ImagePalette
@@ -474,12 +475,53 @@ def write_c16_file(fname_or_stream, images, pixel_fmt="RGB565"):
         for img in images:
             output_position += 4 + 4 * img.height
 
-        compressed_data = []
+        # TODO: byteswap arrays if on big-endian?
+        assert sys.byteorder == "little"
+
+        compressed = io.BytesIO()
         for i, img in enumerate(images):
             img_width = img.width  # appears on profiling logs
             img_height = img.height  # appears on profiling logs
             data = array.array("H", convert_image(img, rawmode).tobytes())
-            compressed = io.BytesIO()
+            black8 = array.array("H", [0] * 8)
+
+            def _match_black():
+                nonlocal p
+                nonlocal run_length
+                nonlocal output_position
+                # optimization: skip 8 black bytes at a time
+                while p < img_width - 8:
+                    start = img_width * j + p
+                    if data[start : start + 8] == black8:
+                        p += 8
+                        run_length += 8
+                    else:
+                        break
+                while p < img_width and data[img_width * j + p] == 0:
+                    p += 1
+                    run_length += 1
+                output_position += 2
+                write_u16le(compressed, run_length << 1)
+
+            def _match_color():
+                nonlocal p
+                nonlocal run_length
+                nonlocal output_position
+                # optimization: use array.array.find to find next black pixel
+                try:
+                    run_length = data[img_width * j + p : img_width * (j + 1)].index(0)
+                except ValueError:
+                    run_length = img_width - p
+
+                write_u16le(compressed, (run_length << 1) | 1)
+                # optimization: use array.array's buffer interface to write directly,
+                # rather than re-encoding as u16le.
+                # WARNING: endianness needs to be correct before doing this
+                write_all(
+                    compressed, data[img_width * j + p : img_width * j + p + run_length]
+                )
+                p += run_length
+                output_position += 2 + run_length * 2
 
             for j in range(img_height):
                 write_u32le(f, output_position)
@@ -491,29 +533,15 @@ def write_c16_file(fname_or_stream, images, pixel_fmt="RGB565"):
                 while p < img_width:
                     run_length = 0
                     if data[img_width * j + p] == 0:
-                        while p < img_width and data[img_width * j + p] == 0:
-                            p += 1
-                            run_length += 1
-                        output_position += 2
-                        write_u16le(compressed, run_length << 1)
+                        _match_black()
                     else:
-                        while p < img_width and data[img_width * j + p] != 0:
-                            p += 1
-                            run_length += 1
-                        output_position += 2 + run_length * 2
-                        write_u16le(compressed, (run_length << 1) | 1)
-                        write_many_u16le(
-                            compressed,
-                            data[img_width * j + (p - run_length) : img_width * j + p],
-                        )
+                        _match_color()
                 output_position += 2
                 write_u16le(compressed, 0)
             output_position += 2
             write_u16le(compressed, 0)
-            compressed_data.append(compressed.getbuffer())
 
-        for compressed in compressed_data:
-            write_all(f, compressed)
+        write_all(f, compressed.getbuffer())
 
 
 def write_blk_file(fname_or_stream, image, pixel_fmt="RGB565"):
