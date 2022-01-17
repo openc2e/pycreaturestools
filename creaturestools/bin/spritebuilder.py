@@ -39,8 +39,12 @@ def main():
     format = args.format
     natural_sort = args.natural_sort
 
-    if len(input_filenames) == 1 and format != "blk":
-        # TODO: what if it's a BLK?
+    if format == "blk":
+        if len(input_filenames) != 1:
+            raise Exception("Expected single file argument when using format 'blk'")
+        images = [PIL.Image.open(input_filenames[0])]
+    elif len(input_filenames) == 1:
+        # TODO: detect automatically that it should be a BLK?
         print("Reading {} as spritesheet".format(input_filenames[0]))
         image = PIL.Image.open(input_filenames[0])
         # TODO: always necessary to convert to RGB? what if the palette looks fine?
@@ -54,7 +58,6 @@ def main():
         print("Found {} sprites".format(len(images)))
     else:
         images = []
-
         if natural_sort:
             sorted_filenames = sorted(input_filenames, key=_natural_sort_key)
             if sorted_filenames != input_filenames:
@@ -68,7 +71,6 @@ def main():
                     "WARNING: If you don't want this behavior, then call this program with: --no-natural-sort"
                 )
                 input_filenames = sorted_filenames
-
         for _ in input_filenames:
             print("Reading {}".format(_))
             images.append(PIL.Image.open(_))
@@ -89,7 +91,16 @@ def main():
         output_filename = "{}.{}".format(base_filename, format)
 
     print("Writing {}".format(output_filename))
-    write_c16_file(output_filename, images)
+    if format == "spr":
+        write_spr_file(output_filename, images)
+    elif format == "s16":
+        write_s16_file(output_filename, images)
+    elif format == "c16":
+        write_c16_file(output_filename, images)
+    elif format == "blk":
+        write_blk_file(output_filename, images[0])
+    else:
+        assert False
 
 
 if __name__ == "__main__":
