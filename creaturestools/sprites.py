@@ -476,33 +476,35 @@ def write_c16_file(fname_or_stream, images, pixel_fmt="RGB565"):
 
         compressed_data = []
         for i, img in enumerate(images):
+            img_width = img.width  # appears on profiling logs
+            img_height = img.height  # appears on profiling logs
             data = array.array("H", convert_image(img, rawmode).tobytes())
             compressed = io.BytesIO()
 
-            for j in range(img.height):
+            for j in range(img_height):
                 write_u32le(f, output_position)
                 if j == 0:
-                    write_u16le(f, img.width)
-                    write_u16le(f, img.height)
+                    write_u16le(f, img_width)
+                    write_u16le(f, img_height)
 
                 p = 0
-                while p < img.width:
+                while p < img_width:
                     run_length = 0
-                    if data[img.width * j + p] == 0:
-                        while p < img.width and data[img.width * j + p] == 0:
+                    if data[img_width * j + p] == 0:
+                        while p < img_width and data[img_width * j + p] == 0:
                             p += 1
                             run_length += 1
                         output_position += 2
                         write_u16le(compressed, run_length << 1)
                     else:
-                        while p < img.width and data[img.width * j + p] != 0:
+                        while p < img_width and data[img_width * j + p] != 0:
                             p += 1
                             run_length += 1
                         output_position += 2 + run_length * 2
                         write_u16le(compressed, (run_length << 1) | 1)
                         write_many_u16le(
                             compressed,
-                            data[img.width * j + (p - run_length) : img.width * j + p],
+                            data[img_width * j + (p - run_length) : img_width * j + p],
                         )
                 output_position += 2
                 write_u16le(compressed, 0)
@@ -637,16 +639,27 @@ def cut_sheet_to_sprites(image, *, colorkey):
         def right(self):
             return self.left + self.width
 
-    for y in range(image.size[1]):
+    image_width = image.width  # appears on profiling logs
+    image_height = image.height  # appears on profiling logs
+
+    data = image.tobytes()
+    depth = len(colorkey)
+    colorkey = bytes(colorkey)
+
+    def _getpixel(x, y):
+        start = (y * image_width + x) * depth
+        return data[start : start + depth]
+
+    for y in range(image_height):
         x = 0
-        while x < image.size[0]:
-            if image.getpixel((x, y)) == colorkey:
+        while x < image_width:
+            if _getpixel(x, y) == colorkey:
                 x += 1
                 continue
 
             # found an image, go as far right as we can
             start_x = x
-            while x < image.size[0] and image.getpixel((x, y)) != colorkey:
+            while x < image_width and _getpixel(x, y) != colorkey:
                 x += 1
             end_x = x
 
