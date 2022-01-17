@@ -3,7 +3,8 @@ import pathlib
 import re
 import string
 
-from creaturestools._io_utils import *
+from ._io_utils import *
+from ._simplelexer import *
 
 
 def _escape(s):
@@ -85,87 +86,10 @@ def generate_pray_source(blocks, filenamefilter=lambda name, data: name):
     return pray_source
 
 
-def _lex_pray_source(s):
-    if not isinstance(s, str):
-        s = decode_creatures_string(s)
-
-    p = 0
-    tokens = []
-    while True:
-        basep = p
-        # check for end of input
-        if p >= len(s):
-            tokens.append(("eoi", ""))
-            break
-        # whitespace
-        elif s[p : p + 1] in (" ", "\t"):
-            while p < len(s) and s[p : p + 1] in (" ", "\t"):
-                p += 1
-            tokens.append(("whitespace", s[basep:p]))
-            continue
-        # newlines
-        elif s[p : p + 1] == "\r":
-            p += 1
-            if p >= len(s):
-                raise Exception("Expected '\n' after '\r', but got end-of-input")
-            elif s[p : p + 1] != "\n":
-                raise Exception(
-                    "Expected '\n' after '\r', but got {}".format(s[p : p + 1])
-                )
-            p += 1
-            tokens.append(("newline", s[basep:p]))
-            continue
-        elif s[p : p + 1] == "\n":
-            p += 1
-            tokens.append(("newline", s[basep:p]))
-            continue
-        # words
-        elif s[p : p + 1] in string.ascii_letters:
-            while p < len(s) and s[p : p + 1] in string.ascii_letters:
-                p += 1
-            tokens.append(("word", s[basep:p]))
-            continue
-        # integers
-        elif s[p : p + 1] in string.digits:
-            while p < len(s) and s[p : p + 1] in string.digits:
-                p += 1
-            tokens.append(("integer", s[basep:p]))
-            continue
-        # at-sign
-        elif s[p : p + 1] == "@":
-            p += 1
-            tokens.append(("atsign", s[basep:p]))
-            continue
-        # strings
-        elif s[p : p + 1] == '"':
-            p += 1
-            while True:
-                if p >= len(s):
-                    raise Exception("While parsing string, got unexpected EOI")
-                elif s[p : p + 1] == "\\":
-                    p += 2
-                    continue
-                elif s[p : p + 1] == '"':
-                    p += 1
-                    break
-                else:
-                    p += 1
-            tokens.append(("string", s[basep + 1 : p - 1]))
-            continue
-        # TODO: comments
-        # error
-        raise Exception(
-            "While parsing pray source, got unexpected character ending at {}".format(
-                s[max(p - 10, 0) : p + 1]
-            )
-        )
-    return tokens
-
-
 def parse_pray_source_file(fname_or_stream):
     with open_if_not_stream(fname_or_stream, "rb") as f:
         s = f.read()
-    t = _lex_pray_source(s)
+    t = simplelexer(s)
     p = 0
 
     def _any_whitespace():
