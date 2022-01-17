@@ -646,6 +646,8 @@ def cut_sheet_to_sprites(image, *, colorkey):
     depth = len(colorkey)
     colorkey = bytes(colorkey)
 
+    colorkey8 = bytes(colorkey) * 8
+
     def _getpixel(x, y):
         start = (y * image_width + x) * depth
         return data[start : start + depth]
@@ -653,9 +655,21 @@ def cut_sheet_to_sprites(image, *, colorkey):
     for y in range(image_height):
         x = 0
         while x < image_width:
-            if _getpixel(x, y) == colorkey:
+            # skip past colorkey color
+            # optimization: skip in batches of 8. this seems to be optimal for me,
+            # speed increases up to batches of 16 where we hit a big slowdown.
+            while x < image_width - 8:
+                start = (y * image_width + x) * depth
+                if data[start : start + 8 * depth] == colorkey8:
+                    x += 8
+                else:
+                    break
+            while x < image_width and _getpixel(x, y) == colorkey:
                 x += 1
-                continue
+
+            # done with line?
+            if x >= image_width:
+                break
 
             # found an image, go as far right as we can
             start_x = x
@@ -671,6 +685,7 @@ def cut_sheet_to_sprites(image, *, colorkey):
                 x += 1
             end_x = x
 
+            # update any previous run that we extended, or make a new run
             for prev in previous_line_runs:
                 if (start_x >= prev.left and start_x < prev.right) or (
                     end_x >= prev.left and end_x < prev.right
