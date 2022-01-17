@@ -659,6 +659,14 @@ def cut_sheet_to_sprites(image, *, colorkey):
 
             # found an image, go as far right as we can
             start_x = x
+
+            # optimization: if we have a matching run, then we can skip to the end
+            for prev in previous_line_runs:
+                if start_x >= prev.left and start_x < prev.right:
+                    x = prev.right
+                    break
+
+            # go as far right as we can
             while x < image_width and _getpixel(x, y) != colorkey:
                 x += 1
             end_x = x
