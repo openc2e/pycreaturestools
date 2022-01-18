@@ -41,7 +41,7 @@ Available tools:
 - **gen2json**: Parses a GEN file and outputs a JSON representation
 - **mngbuilder**: Compiles a MNG script and associated WAV samples
 - **mngdumper**: Takes a MNG music file and outputs the descrambled script and WAV samples.
-- **praybuilder**: Parses a PRAY or CAOS2PRAY file and builds an AGENTS file.
+- **praybuilder**: Parses a PRAY or CAOS2PRAY file and builds an AGENTS file. If any sprites or music files are missing, it will build them on-the-fly from images and MNG scripts.
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
 - **spritebuilder**: Takes a spritesheet image and converts it into a C16 sprite file
