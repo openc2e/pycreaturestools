@@ -15,7 +15,8 @@ File types supported:
 - GEN files (read only, version 3 only)
 - PRAY files (AGENTS, CREATURE, FAMILY, SEAMONKEYS, etc) (read+write)
 - PRAY source files (read+write)
-- CAOS2PRAY source files (read)
+- CAOS2PRAY source files (read only)
+- MNG music files (read+write)
 - CreaturesArchive compression wrapper (read only)
 - NetBabel (read only, most message types except NET: WRIT)
 - PCAP files (read only, used for reading NetBabel packet captures)
@@ -38,6 +39,8 @@ Available tools:
 - **caos2praybuilder**: Alias for *praybuilder*.
 - **cobdumper**: Takes a C1 COB/RCB or C2 COB and decompiles it
 - **gen2json**: Parses a GEN file and outputs a JSON representation
+- **mngbuilder**: Compiles a MNG script and associated WAV samples
+- **mngdumper**: Takes a MNG music file and outputs the descrambled script and WAV samples.
 - **praybuilder**: Parses a PRAY or CAOS2PRAY file and builds an AGENTS file.
 - **praycrush**: Recompresses a PRAY file to make it as small as possible
 - **praydumper**: Takes a PRAY file (.AGENTS, .FAMILY, .SEAMONKEYS, etc) and decompiles it
@@ -91,6 +94,11 @@ Available tools:
 - `svrule3_from_bytes(bytes[48]) -> List[str]`
 - `SVRULE3_OPCODES: Mapping[int, str]`
 - `SVRULE3_OPERAND_TYPES: Mapping[int, str]`
+
+**creaturestools.mngmusic**
+- `read_mng_file(fname_or_stream) -> (script, Dict[str, sample_data])`
+- `write_mng_file(fname_or_stream, script, fileloaderfunc)`
+- `mngscript_get_wave_names(script) -> List[str]`
 
 **creaturestools.netbabel**
 - `parse_netbabel_client_message(f) -> NetBabelClientMessage`
