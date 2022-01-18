@@ -8,6 +8,7 @@ from creaturestools._io_utils import *
 from creaturestools._simplelexer import *
 from creaturestools.caos2pray import *
 from creaturestools.exceptions import *
+from creaturestools.mngmusic import *
 from creaturestools.pray import *
 from creaturestools.praysource import *
 from creaturestools.sprites import *
@@ -15,11 +16,12 @@ from creaturestools.sprites import *
 
 def _find_neighboring_file(filename, allowed_extensions):
     for neighbor in filename.parent.iterdir():
-        if (
-            neighbor.stem == filename.stem
-            and neighbor.suffix.lower() in allowed_extensions
-        ):
-            return neighbor
+        for ext in allowed_extensions:
+            if (
+                str(neighbor).lower().endswith(ext)
+                and str(neighbor.name)[: -len(ext)] == filename.stem
+            ):
+                return neighbor
 
 
 def _cut_sheet_if_needed(image):
@@ -48,6 +50,29 @@ def _build_sprite(filename, ext):
     return b.getbuffer()
 
 
+def _build_music(filename):
+    filename_dirname = os.path.dirname(filename)
+    filename_root = os.path.basename(os.path.splitext(filename)[0])
+    if filename_root.lower().endswith(".mng"):
+        filename_root = filename_root[: -len(".mng")]
+
+    with open(filename) as f:
+        script = f.read()
+
+    def mngfileloaderfunc(mngname):
+        child_mngname = os.path.join(filename_dirname, filename_root, mngname)
+        mngname = os.path.join(filename_dirname, mngname)
+        if not os.path.exists(mngname) and os.path.exists(child_mngname):
+            mngname = child_mngname
+        print("Loading {!r}".format(mngname))
+        with open(mngname, "rb") as f:
+            return f.read()
+
+    b = io.BytesIO()
+    write_mng_file(b, script, mngfileloaderfunc)
+    return b.getbuffer()
+
+
 def main():
     opts = argparse.ArgumentParser()
     opts.add_argument("file", type=pathlib.Path)
@@ -57,6 +82,12 @@ def main():
         dest="convert_images",
         action="store_false",
         help="Don't build sprites from .png/.bmp files",
+    )
+    opts.add_argument(
+        "--no-convert-music",
+        dest="convert_music",
+        action="store_false",
+        help="Don't build MNG music from .mng.txt/.wav files",
     )
     args = opts.parse_args()
 
@@ -76,6 +107,7 @@ def main():
         blocks = parse_pray_source_file(input_filename)
 
     def fileloaderfunc(filename):
+        original_filename = filename
         filename = input_dirname / pathlib.Path(filename)
 
         if filename.exists():
@@ -84,8 +116,14 @@ def main():
         if args.convert_images and filename.suffix.lower() in (".blk", ".c16", ".s16"):
             neighbor = _find_neighboring_file(filename, (".bmp", ".png"))
             if neighbor:
-                print("Building '{}' from '{}'".format(filename, neighbor))
+                print("Building '{}' from '{}'".format(original_filename, neighbor))
                 return _build_sprite(neighbor, filename.suffix.lower())
+
+        if args.convert_music and filename.suffix.lower() == ".mng":
+            neighbor = _find_neighboring_file(filename, (".mng.txt",))
+            if neighbor:
+                print("Building '{}' from '{}'".format(original_filename, neighbor))
+                return _build_music(neighbor)
 
         raise FileNotFoundError(filename)
 
