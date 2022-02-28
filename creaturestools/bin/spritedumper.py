@@ -8,6 +8,20 @@ from creaturestools.creatures0 import *
 from creaturestools.sprites import *
 
 
+def stitch_c1_image(images):
+    if len(images) == 1 and images[0].width == 8352 and images[0].height == 1200:
+        # Creatures 1 background, don't stitch
+        return images[0]
+    return stitch_to_sheet(images)
+
+
+def stitch_c2_image(images):
+    if len(images) == 1 and images[0].width == 8352 and images[0].height == 2400:
+        # Creatures 2 background, don't stitch
+        return images[0]
+    return stitch_to_sheet(images)
+
+
 def main():
     opts = argparse.ArgumentParser()
     opts.add_argument("file", nargs="+")
@@ -25,7 +39,7 @@ def main():
         if fname.lower().endswith(".c16"):
             image = stitch_to_sheet(read_c16_file(fname))
         elif fname.lower().endswith(".s16"):
-            image = stitch_to_sheet(read_s16_file(fname))
+            image = stitch_c2_image(read_s16_file(fname))
         elif fname.lower().endswith(".blk"):
             image = read_blk_file(fname)
         elif fname.lower().endswith(".spr"):
@@ -46,9 +60,9 @@ def main():
                                 fname
                             )
                         )
+                        image = stitch_to_sheet(images)
             else:
-                images = read_spr_file(fname, palette=palette)
-            image = stitch_to_sheet(images)
+                image = stitch_c1_image(read_spr_file(fname, palette=palette))
         else:
             raise Exception("Don't know how to open filename '{}'".format(fname))
 
