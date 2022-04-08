@@ -1,3 +1,5 @@
+import re
+
 from creaturestools._simplelexer import *
 from creaturestools.praysource import *
 
@@ -66,7 +68,7 @@ def _caos2pray_lex_line(line):
 def parse_caos2pray_source_file(fname_or_stream):
     with open_if_not_stream(fname_or_stream, "rb") as f:
         s = f.read().decode()
-    lines = s.strip().split("\n")
+    lines = re.split("\r?\n", s.strip())
 
     tag_blocks = []
     tag_values = {"Agent Type": 0}
