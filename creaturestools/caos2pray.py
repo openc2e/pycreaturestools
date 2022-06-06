@@ -113,7 +113,14 @@ def parse_caos2pray_source_file(fname_or_stream):
                     raise Exception("Expected single argument, but got {}".format(args))
                 else:
                     tag_blocks.append(("AGNT", args[0]))
-            # elif commandname == 'wxyz-name': # TODO
+            # An attempt at commandname == 'wxyz-name'
+            elif len(commandname) == 9 and commandname.upper()[-5:] == '-NAME':
+                if len(args) != 1:
+                    raise Exception("Expected single argument, but got {}".format(args))
+                else:
+                    default_c3_name = args[0]
+                    tag_blocks.append((commandname.upper()[:4], args[0]))
+                    print(commandname.upper()[:4])
             elif commandname == "depend":
                 dependencies += args
             elif commandname == "inline":
