@@ -1,4 +1,5 @@
 import io
+import logging
 import re
 import string
 import zlib
@@ -24,26 +25,38 @@ PRAY_TAG_BLOCK_TYPES = (
     "MESG",  # NetBabel
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_tag_data(data):
     f = io.BytesIO(data)
 
     values = {}
 
+    def check_dup(name, new_value):
+        if name not in values:
+            return
+        if values[name] == new_value:
+            logger.warning("Got duplicate tag {!r} = {!r}".format(name, new_value))
+            return
+        raise ReadError(
+            "Got duplicate tag {!r}; values {!r}, {!r}".format(
+                name, values[name], new_value
+            )
+        )
+
     num_int_values = read_u32le(f)
     for _ in range(num_int_values):
         name = read_u32le_prefixed_string(f).decode("cp1252")
-        if name in values:
-            raise ReadError("Got duplicate tag name {!r}".format(name))
         value = read_u32le(f)
+        check_dup(name, value)
         values[name] = value
 
     num_str_values = read_u32le(f)
     for _ in range(num_str_values):
         name = read_u32le_prefixed_string(f).decode("cp1252")
-        if name in values:
-            raise ReadError("Got duplicate tag name {!r}".format(name))
         value = read_u32le_prefixed_string(f).decode("cp1252")
+        check_dup(name, value)
         values[name] = value
 
     return values
