@@ -38,6 +38,8 @@ def main():
         print("Reading {}".format(fname))
         if fname.lower().endswith(".c16"):
             image = stitch_to_sheet(read_c16_file(fname))
+        elif fname.lower().endswith(".m16") or fname.lower().endswith(".n16"):
+            image = stitch_to_sheet(read_m16_or_n16_file(fname))
         elif fname.lower().endswith(".s16"):
             image = stitch_c2_image(read_s16_file(fname))
         elif fname.lower().endswith(".blk"):

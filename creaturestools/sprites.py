@@ -151,6 +151,70 @@ def read_s16_file(fname_or_stream):
             return images
 
 
+def read_m16_or_n16_file(fname_or_stream):
+    with open_if_not_stream(fname_or_stream, "rb") as f:
+        pixel_fmt = read_u32le(f)
+
+        rawmode = "BGR;15"
+
+        def read_exact_be(f, n):
+            data = array.array("H", read_exact(f, n))
+            # TODO: assert LE
+            data.byteswap()
+            for i in range(len(data)):
+                data[i] = data[i] >> 1
+            return data.tobytes()
+
+        if pixel_fmt == 0x1000000:  # N16
+            pass
+        elif pixel_fmt == 0x3000000:  # M16
+            pass
+        else:
+            desc = "Expected pixel format to be 0x1000000 (N16) or 0x3000000 (M16), but got 0x{:x}".format(
+                pixel_fmt
+            )
+            if pixel_fmt == 0:
+                desc += " (S16 RGB555)"
+            elif pixel_fmt == 1:
+                desc += " (S16 RGB565)"
+            elif pixel_fmt == 2:
+                desc += " (C16 RGB555)"
+            elif pixel_fmt == 3:
+                desc += " (C16 RGB565)"
+            raise ReadError(desc)
+
+        num_images = read_u16be(f)
+        widths = []
+        heights = []
+        next_offset = 6 + (8 * num_images)
+        for _ in range(num_images):
+            offset = read_u32be(f)
+            if offset != next_offset:
+                raise ReadError(
+                    "Expected image offset to be {}, but got {}".format(
+                        next_offset, offset
+                    )
+                )
+            widths.append(read_u16be(f))
+            heights.append(read_u16be(f))
+            next_offset += 2 * widths[-1] * heights[-1]
+
+        images = []
+        for i in range(num_images):
+            image = Image.frombytes(
+                "RGB",
+                (widths[i], heights[i]),
+                read_exact_be(f, 2 * widths[i] * heights[i]),
+                "raw",
+                rawmode,
+            )
+            image.info["rawmode"] = rawmode
+            image = image.convert("RGB")
+            images.append(image)
+
+        return images
+
+
 def read_c16_file(fname_or_stream):
     with open_if_not_stream(fname_or_stream, "rb") as f:
         pixel_fmt = read_u32le(f)
