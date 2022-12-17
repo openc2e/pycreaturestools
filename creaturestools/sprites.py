@@ -1,5 +1,6 @@
 import array
 import io
+import logging
 import struct
 import sys
 
@@ -9,6 +10,8 @@ from PIL.ImagePalette import ImagePalette
 from ._image_utils import *
 from ._io_utils import *
 from .exceptions import *
+
+logger = logging.getLogger(__name__)
 
 CREATURES1_PALETTE = ImagePalette(
     palette=[
@@ -418,11 +421,16 @@ def read_spr_file(fname_or_stream, palette=None):
             images = []
             for i in range(num_images):
                 data = read_exact(f, widths[i] * heights[i])
-                image = Image.frombytes(
-                    "P",
-                    (widths[i], heights[i]),
-                    data,
-                )
+                # print(f"widths[{i}]={widths[i]} heights[{i}]={heights[i]}")
+                if widths[i] == 0 or heights[i] == 0:
+                    logger.warning(f"Sprite {i+1} of {num_images} has 0x0 dimensions")
+                    image = Image.new("P", (0, 0))
+                else:
+                    image = Image.frombytes(
+                        "P",
+                        (widths[i], heights[i]),
+                        data,
+                    )
                 # TODO: are all blacks transparent? or just palette index 0?
                 image.putpalette(palette or CREATURES1_PALETTE)
                 images.append(image)
