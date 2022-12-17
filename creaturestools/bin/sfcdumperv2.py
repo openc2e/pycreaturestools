@@ -24,6 +24,9 @@ class MFCReader:
         assert len(result) == n
         return result
 
+    def read_s8(self):
+        return struct.unpack("<b", self.read(1))[0]
+
     def read_u8(self):
         return struct.unpack("<B", self.read(1))[0]
 
@@ -241,9 +244,10 @@ class Object:
         self.tick_state = ar.read_u32le()
         self.objp = ar.read_object("Object")
         self.current_sound_filename = ar.read(4).decode("ascii")
-        self.current_sound_filename = self.current_sound_filename[
-            : self.current_sound_filename.find("\x00")
-        ]
+        if "\x00" in self.current_sound_filename:
+            self.current_sound_filename = self.current_sound_filename[
+                : self.current_sound_filename.find("\x00")
+            ]
         self.obv0 = ar.read_u32le()
         self.obv1 = ar.read_u32le()
         self.obv2 = ar.read_u32le()
@@ -258,7 +262,7 @@ class Object:
 
     def __json__(self):
         return dict(
-            _type="Object",
+            _type=type(self).__name__,
             _unid=self._unid,
             family=self.family,
             genus=self.genus,
@@ -288,7 +292,7 @@ class Scenery(Object):
         self.part = ar.read_object("Entity")
 
     def __json__(self):
-        return {**Object.__json__(self), "_type": "Scenery", "part": self.part}
+        return {**Object.__json__(self), "part": self.part}
 
 
 class SimpleObject(Object):
@@ -296,16 +300,15 @@ class SimpleObject(Object):
         Object.read(self, ar)
         self.part = ar.read_object("Entity")
         self.zorder = ar.read_u32le()
-        self.click_bhvr = []
-        self.click_bhvr.append(ar.read_u8())
-        self.click_bhvr.append(ar.read_u8())
-        self.click_bhvr.append(ar.read_u8())
-        self.touch_bhvr = ar.read_u8()
+        self.click_bhvr = {}
+        self.click_bhvr["deactivated"] = ar.read_s8()
+        self.click_bhvr["activated1"] = ar.read_s8()
+        self.click_bhvr["activated2"] = ar.read_s8()
+        self.touch_bhvr = ar.read_s8()
 
     def __json__(self):
         return {
             **Object.__json__(self),
-            "_type": "SimpleObject",
             "part": self.part,
             "zorder": self.zorder,
             "click_bhvr": self.click_bhvr,
@@ -325,7 +328,6 @@ class PointerTool(SimpleObject):
     def __json__(self):
         return {
             **SimpleObject.__json__(self),
-            "_type": "PointerTool",
             "relx": self.relx,
             "rely": self.rely,
             "text": self.text,
@@ -342,7 +344,6 @@ class CallButton(SimpleObject):
     def __json__(self):
         return {
             **SimpleObject.__json__(self),
-            "_type": "CallButton",
             "lift": as_ref(self.lift),
             "button_id": self.button_id,
         }
@@ -352,20 +353,47 @@ class CompoundObject(Object):
     def read(self, ar):
         Object.read(self, ar)
         num_parts = ar.read_u32le()
-        print(f"{num_parts=}")
+        self.parts = []
         for _ in range(num_parts):
             part = ar.read_object("Entity")
             part_x = ar.read_u32le()
             part_y = ar.read_u32le()
+            self.parts.append({"part": part, "relx": part_x, "rely": part_y})
 
+        self.hotspots = []
         for _ in range(6):
-            hotspot_left = ar.read_u32le()
-            hotspot_top = ar.read_u32le()
-            hotspot_right = ar.read_u32le()
-            hotspot_bottom = ar.read_u32le()
+            hotspot_left = ar.read_s32le()
+            hotspot_top = ar.read_s32le()
+            hotspot_right = ar.read_s32le()
+            hotspot_bottom = ar.read_s32le()
+            if _ >= 3 and (
+                hotspot_left + hotspot_top + hotspot_right + hotspot_bottom != -4
+            ):
+                print("whoa")
+            self.hotspots.append(
+                (hotspot_left, hotspot_top, hotspot_right, hotspot_bottom)
+            )
 
-        for _ in range(6):
-            function_hotspot = ar.read_u32le()
+        self.function_hotspots = {}
+        for i in range(6):
+            function_hotspot = ar.read_s32le()
+            function_name = [
+                "creatureact1",
+                "creatureact2",
+                "creaturedeact",
+                "mouseact1",
+                "mouseact2",
+                "mousedeact",
+            ][i]
+            self.function_hotspots[function_name] = function_hotspot
+
+    def __json__(self):
+        return {
+            **super().__json__(),
+            "parts": self.parts,
+            "hotspots": self.hotspots,
+            "function_hotspots": self.function_hotspots,
+        }
 
 
 class Blackboard(CompoundObject):
@@ -450,9 +478,14 @@ class Entity:
 class Macro:
     def read(self, ar):
         self.selfdestruct = ar.read_u32le()
+        assert self.selfdestruct in (0, 1)
+        self.selfdestruct = bool(self.selfdestruct)
         self.inst = ar.read_u32le()
-        self.maybe_text_length = ar.read_u32le()
+        assert self.inst in (0, 1)
+        self.inst = bool(self.inst)
+        self.script_length_plus_six = ar.read_u32le()
         self.script = ar.read_string().decode("ascii")
+        assert len(self.script) + 6 == self.script_length_plus_six
         self.ip = ar.read_u32le()
         self.stack = []
         for _ in range(20):
@@ -482,11 +515,12 @@ class Macro:
             _type="Macro",
             selfdestruct=self.selfdestruct,
             inst=self.inst,
-            maybe_text_length=self.maybe_text_length,
-            script=self.script,
-            ip=self.ip,
-            stack=self.stack,
-            sp=self.sp,
+            # script_length_plus_six=self.script_length_plus_six,
+            # script=self.script,
+            # ip=self.ip,
+            script=self.script[: self.ip] + " (!ip!) " + self.script[self.ip :],
+            stack=self.stack[: self.sp],
+            # sp=self.sp,
             vars=self.vars,
             ownr=as_ref(self.ownr),
             from_=as_ref(self.from_),
@@ -494,8 +528,14 @@ class Macro:
             targ=as_ref(self.targ),
             _it_=as_ref(self._it_),
             part=self.part,
-            label_most_recently_visited_subroutine=self.label_most_recently_visited_subroutine,
-            address_most_recently_visited_subroutine=self.address_most_recently_visited_subroutine,
+            recent_subroutine="{}:{}".format(
+                self.label_most_recently_visited_subroutine,
+                self.address_most_recently_visited_subroutine,
+            )
+            if self.label_most_recently_visited_subroutine
+            else None,
+            # label_most_recently_visited_subroutine=self.label_most_recently_visited_subroutine,
+            # address_most_recently_visited_subroutine=self.address_most_recently_visited_subroutine,
             wait=self.wait,
         )
 
@@ -1259,21 +1299,26 @@ def my_default(obj):
     return obj.__json__()
 
 
+def pretty(obj):
+    result = json.dumps(obj, indent=1, default=my_default)
+    return re.sub(r'"(.*?)"(?=:)', r"\1", result)
+
+
 def read_sfc_file(ar):
     map = ar.read_object("MapData")
-    print(json.dumps(map, indent=1, default=my_default))
+    print(pretty(map))
 
     num_objects = ar.read_u32le()
     for _ in range(num_objects):
         obj = ar.read_object("Object")
-        print(json.dumps(obj, indent=1, default=my_default))
+        print(pretty(obj))
         # print(MyJSONEncoder().encode(obj, indent=1))
         # exit()
 
     num_sceneries = ar.read_u32le()
     for _ in range(num_sceneries):
         scen = ar.read_object("Scenery")
-        print(json.dumps(scen, indent=1, default=my_default))
+        print(pretty(scen))
 
     num_scripts = ar.read_u32le()
     for _ in range(num_scripts):
@@ -1303,7 +1348,7 @@ def read_sfc_file(ar):
     num_macros = ar.read_u32le()
     for _ in range(num_macros):
         macro = ar.read_object("Macro")
-        print(json.dumps(macro, indent=1, default=my_default))
+        print(pretty(macro))
 
     num_deathrow = ar.read_u32le()
     for _ in range(num_deathrow):
