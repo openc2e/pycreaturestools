@@ -115,22 +115,28 @@ import PIL.ImageDraw
 
 
 class Vec2:
-    __slots__ = ('x', 'y')
+    __slots__ = ("x", "y")
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
     def __add__(self, other):
         return Vec2(self.x + other.x, self.y + other.y)
+
     def __sub__(self, other):
         return Vec2(self.x - other.x, self.y - other.y)
+
     def __repr__(self):
         return "({}, {})".format(self.x, self.y)
+
     def __getitem__(self, i):
         if i == 0:
             return self.x
         if i == 1:
             return self.y
         raise NotImplementedError(i)
+
     def tuple(self):
         return (self.x, self.y)
 
@@ -152,7 +158,7 @@ class MockLimb:
         self.limb_data = limb_data
         self.sprite = sprite
         self.next = None
-    
+
     def current_sprite(self):
         return self.sprite[self.pose]
 
@@ -167,13 +173,13 @@ class MockLimb:
 
     def end_absolute(self):
         return self.position + self.end_relative()
-    
+
     def tip_start(self):
         limb = self
         while limb.next:
             limb = limb.next
         return limb.start_absolute()
-    
+
     def tip_end(self):
         limb = self
         while limb.next:
@@ -221,14 +227,16 @@ class CaseInsensitiveFilesystem:
         for i in range(len(images)):
             # this is so stupid. why can't PIL support a basic colorkey on paletted images?
             img = images[i]
-            img.info['transparency'] = 0
+            img.info["transparency"] = 0
             img.apply_transparency()
-            images[i] = img.convert('RGBA')
+            images[i] = img.convert("RGBA")
         return images
+
 
 class Downfoot(enum.Enum):
     RIGHT = 0
     LEFT = 1
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -248,16 +256,37 @@ def main():
     )
     args = parser.parse_args()
 
-    print("WARNING: this does not calculate downfeet/walking in the same way as the official game")
+    print(
+        "WARNING: this does not calculate downfeet/walking in the same way as the official game"
+    )
 
     fs = CaseInsensitiveFilesystem(args.data_directory)
     poses = args.poses
-    if poses == ['default']:
-        poses = ['?201221010012XX', '?201013221101XX', '?101011221200XX', '?203221010111XX' ]
-    elif poses == ['tired']:
-        poses = ['?011010210100XX', '?013221010100XX', '?011212230001XX', '?010002220001XX']
-    elif poses == ['drunk']:
-        poses = ['?021222012322XX', '?021222012322XX', '?113011222322XX', '?033210002311XX', '?021222012322XX', '?010003212322XX', '?113011222322XX', '?033210002311XX']
+    if poses == ["default"]:
+        poses = [
+            "?201221010012XX",
+            "?201013221101XX",
+            "?101011221200XX",
+            "?203221010111XX",
+        ]
+    elif poses == ["tired"]:
+        poses = [
+            "?011010210100XX",
+            "?013221010100XX",
+            "?011212230001XX",
+            "?010002220001XX",
+        ]
+    elif poses == ["drunk"]:
+        poses = [
+            "?021222012322XX",
+            "?021222012322XX",
+            "?113011222322XX",
+            "?033210002311XX",
+            "?021222012322XX",
+            "?010003212322XX",
+            "?113011222322XX",
+            "?033210002311XX",
+        ]
 
     selector = args.selector
 
@@ -281,9 +310,9 @@ def main():
     left_arm.next = build_body_part("j")
     right_arm = build_body_part("k")
     right_arm.next = build_body_part("l")
-    
+
     # set up canvas
-    canvas = PIL.Image.new("RGBA", size=(5000, 5000)) # TODO: how big?
+    canvas = PIL.Image.new("RGBA", size=(5000, 5000))  # TODO: how big?
     # canvas.putpalette(creaturestools.sprites.CREATURES1_PALETTE)
     canvas.paste((0, 0, 0, 255), (0, 0, canvas.width, canvas.height))
     draw = PIL.ImageDraw.Draw(canvas)
@@ -291,28 +320,30 @@ def main():
     # helper functions
     def set_sprites(pose_string):
         assert len(pose_string) == 15
-        if pose_string[0] != '?':
+        if pose_string[0] != "?":
             raise NotImplementedError(pose_string)
-        if pose_string[1] == '?':
+        if pose_string[1] == "?":
             raise NotImplementedError(pose_string)
-        if pose_string[13] != 'X' or pose_string[14] != 'X':
+        if pose_string[13] != "X" or pose_string[14] != "X":
             raise NotImplementedError(pose_string)
         # assume direction is east
-        head.pose = ord(pose_string[1]) - ord('0')
-        body.pose = ord(pose_string[2]) - ord('0')
-        left_thigh.pose = ord(pose_string[3]) - ord('0')
-        left_thigh.next.pose = ord(pose_string[4]) - ord('0')
-        left_thigh.next.next.pose = ord(pose_string[5]) - ord('0')
-        right_thigh.pose = ord(pose_string[6]) - ord('0')
-        right_thigh.next.pose = ord(pose_string[7]) - ord('0')
-        right_thigh.next.next.pose = ord(pose_string[8]) - ord('0')
-        left_arm.pose = ord(pose_string[9]) - ord('0')
-        left_arm.next.pose = ord(pose_string[10]) - ord('0')
-        right_arm.pose = ord(pose_string[11]) - ord('0')
-        right_arm.next.pose = ord(pose_string[12]) - ord('0')
-    
+        head.pose = ord(pose_string[1]) - ord("0")
+        body.pose = ord(pose_string[2]) - ord("0")
+        left_thigh.pose = ord(pose_string[3]) - ord("0")
+        left_thigh.next.pose = ord(pose_string[4]) - ord("0")
+        left_thigh.next.next.pose = ord(pose_string[5]) - ord("0")
+        right_thigh.pose = ord(pose_string[6]) - ord("0")
+        right_thigh.next.pose = ord(pose_string[7]) - ord("0")
+        right_thigh.next.next.pose = ord(pose_string[8]) - ord("0")
+        left_arm.pose = ord(pose_string[9]) - ord("0")
+        left_arm.next.pose = ord(pose_string[10]) - ord("0")
+        right_arm.pose = ord(pose_string[11]) - ord("0")
+        right_arm.next.pose = ord(pose_string[12]) - ord("0")
+
     def calculate_positions_from_body():
-        for trunk_part, limb in enumerate((head, left_thigh, right_thigh, left_arm, right_arm)):
+        for trunk_part, limb in enumerate(
+            (head, left_thigh, right_thigh, left_arm, right_arm)
+        ):
             offset = body.position + body.body_data[body.pose][trunk_part]
             while limb:
                 limb.position = offset - limb.start_relative()
@@ -331,7 +362,9 @@ def main():
 
         offset += downthigh.end_relative() - downthigh.start_relative()
         offset += downthigh.next.end_relative() - downthigh.next.start_relative()
-        offset += downthigh.next.next.end_relative() - downthigh.next.next.start_relative()
+        offset += (
+            downthigh.next.next.end_relative() - downthigh.next.next.start_relative()
+        )
         # MUST USE SAVED DOWNFOOT POSITION FROM LAST TIME, NOT BASED OFF OF NEW BODY DATA / NEW POSE
         body.position = downfoot_position - offset
 
@@ -339,9 +372,24 @@ def main():
 
     def render_to_canvas():
         # assume direction is east
-        for part in (left_arm.next, left_arm, left_thigh.next.next, left_thigh.next, left_thigh, body, head, right_thigh, right_thigh.next, right_thigh.next.next, right_arm, right_arm.next):
-            canvas.alpha_composite(part.current_sprite(), (part.position.x, part.position.y))
-        
+        for part in (
+            left_arm.next,
+            left_arm,
+            left_thigh.next.next,
+            left_thigh.next,
+            left_thigh,
+            body,
+            head,
+            right_thigh,
+            right_thigh.next,
+            right_thigh.next.next,
+            right_arm,
+            right_arm.next,
+        ):
+            canvas.alpha_composite(
+                part.current_sprite(), (part.position.x, part.position.y)
+            )
+
         # draw feet tips
         render_rect((0, 128, 0, 255), left_thigh.next.next.start_absolute())
         render_rect((0, 255, 0, 255), left_thigh.next.next.end_absolute())
@@ -353,7 +401,10 @@ def main():
         upper_left_corner = body.position
         for part in (head, left_thigh, right_thigh, left_arm, right_arm):
             while part:
-                upper_left_corner = Vec2(min(upper_left_corner.x, part.position.x), min(upper_left_corner.y, part.position.y))
+                upper_left_corner = Vec2(
+                    min(upper_left_corner.x, part.position.x),
+                    min(upper_left_corner.y, part.position.y),
+                )
                 part = part.next
 
         # add text
@@ -364,14 +415,13 @@ def main():
             for j in (-1, 0, 1):
                 canvas.putpixel((start.x + i, start.y + j), color)
 
-
     # generate first pose
-    body.position = Vec2(50, 50) # TODO: where to start?
+    body.position = Vec2(50, 50)  # TODO: where to start?
     set_sprites(poses[0])
     calculate_positions_from_body()
     render_to_canvas()
     annotate("0")
-    
+
     # figure out the initial downfoot
     if left_thigh.tip_start().y > right_thigh.tip_start().y:
         downfoot = Downfoot.LEFT
@@ -400,11 +450,10 @@ def main():
         render_to_canvas()
         annotate(str(pose_idx))
 
-
     # save
-    bbox = canvas.convert('RGB').getbbox() # so stupid, getbbox doesn't work on RGBA
+    bbox = canvas.convert("RGB").getbbox()  # so stupid, getbbox doesn't work on RGBA
     canvas = canvas.crop((bbox[0] - 50, bbox[1] - 50, bbox[2] + 50, bbox[3] + 50))
-    canvas.save('gait.png')
+    canvas.save("gait.png")
 
 
 if __name__ == "__main__":
