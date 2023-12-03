@@ -488,7 +488,8 @@ def main():
             annotate(str(poses[pose_idx][0]))
 
     # save
-    bbox = canvas.convert("RGB").getbbox()  # so stupid, getbbox doesn't work on RGBA
+    canvas = canvas.convert("P", palette=creaturestools.sprites.CREATURES1_PALETTE)
+    bbox = canvas.getbbox()  # getbbox doesn't work on RGBA
     canvas = canvas.crop((bbox[0] - 50, bbox[1] - 50, bbox[2] + 50, bbox[3] + 50))
     canvas.save("gait.png")
 
