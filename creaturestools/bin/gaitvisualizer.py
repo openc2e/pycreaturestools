@@ -256,11 +256,8 @@ def main():
     )
     args = parser.parse_args()
 
-    print(
-        "WARNING: this does not calculate downfeet/walking in the same way as the official game"
-    )
-
     fs = CaseInsensitiveFilesystem(args.data_directory)
+    selector = args.selector
     poses = args.poses
     if poses == ["default"]:
         poses = [
@@ -288,7 +285,38 @@ def main():
             "?033210002311XX",
         ]
 
-    selector = args.selector
+    # interpolate poses
+    def interpolate_poses(poses):
+        all_poses = list(enumerate(poses))[1:] + [(0, poses[0])]
+        result = []
+        result.append((0, poses[0]))
+        while all_poses:
+            (i, target_pose) = all_poses[0]
+            next_pose = ""
+            previous_pose = result[-1][1]
+
+            # TODO: direction and head are totally different
+
+            for targ, old in zip(target_pose, previous_pose):
+                if targ == "X":
+                    next_pose += old
+                    continue
+                if ord(targ) > ord(old):
+                    next_pose += chr(ord(old) + 1)
+                elif ord(targ) < ord(old):
+                    next_pose += chr(ord(old) - 1)
+                else:
+                    next_pose += targ
+
+            if next_pose == target_pose:
+                all_poses.pop(0)
+                result.append((i, target_pose))
+            else:
+                result.append(("", next_pose))
+        return result
+
+    poses = interpolate_poses(poses)
+    print(poses)
 
     # load att and spr data and set up structures
     body = MockBody(
@@ -312,22 +340,29 @@ def main():
     right_arm.next = build_body_part("l")
 
     # set up canvas
-    canvas = PIL.Image.new("RGBA", size=(5000, 5000))  # TODO: how big?
+    canvas = PIL.Image.new("RGBA", size=(10000, 10000))  # TODO: how big?
     # canvas.putpalette(creaturestools.sprites.CREATURES1_PALETTE)
     canvas.paste((0, 0, 0, 255), (0, 0, canvas.width, canvas.height))
     draw = PIL.ImageDraw.Draw(canvas)
 
     # helper functions
     def set_sprites(pose_string):
+        print(pose_string)
         assert len(pose_string) == 15
-        if pose_string[0] != "?":
-            raise NotImplementedError(pose_string)
-        if pose_string[1] == "?":
-            raise NotImplementedError(pose_string)
+        if pose_string[0] not in ("?", "X"):
+            print(
+                "WARNING: direction {} not implemented, ignoring".format(pose_string[0])
+            )
         if pose_string[13] != "X" or pose_string[14] != "X":
-            raise NotImplementedError(pose_string)
+            print(
+                "WARNING: tail poses not implemented, ignoring: {}".format(pose_string)
+            )
         # assume direction is east
-        head.pose = ord(pose_string[1]) - ord("0")
+        if pose_string[1] == "?":
+            print("WARNING: head pose '?' not implemented, using 0")
+            head.pose = 0
+        else:
+            head.pose = ord(pose_string[1]) - ord("0")
         body.pose = ord(pose_string[2]) - ord("0")
         left_thigh.pose = ord(pose_string[3]) - ord("0")
         left_thigh.next.pose = ord(pose_string[4]) - ord("0")
@@ -373,11 +408,11 @@ def main():
     def render_to_canvas():
         # assume direction is east
         for part in (
-            left_arm.next,
-            left_arm,
             left_thigh.next.next,
             left_thigh.next,
             left_thigh,
+            left_arm.next,
+            left_arm,
             body,
             head,
             right_thigh,
@@ -417,38 +452,40 @@ def main():
 
     # generate first pose
     body.position = Vec2(50, 50)  # TODO: where to start?
-    set_sprites(poses[0])
+    set_sprites(poses[0][1])
     calculate_positions_from_body()
     render_to_canvas()
     annotate("0")
 
     # figure out the initial downfoot
-    if left_thigh.tip_start().y > right_thigh.tip_start().y:
+    if left_thigh.tip_end().y > right_thigh.tip_end().y:
         downfoot = Downfoot.LEFT
         downfoot_position = left_thigh.tip_end()
     else:
         downfoot = Downfoot.RIGHT
         downfoot_position = right_thigh.tip_end()
 
-    for i in range(1, len(poses) + 1):
+    # generate next pose
+    for i in range(1, len(poses)):
         pose_idx = i % len(poses)
         # shift down, generate next pose
         downfoot_position += Vec2(0, 75)
-        set_sprites(poses[pose_idx])
+        set_sprites(poses[pose_idx][1])
         calculate_positions_from_downfoot()
         # did downfoot change?
         if downfoot == Downfoot.LEFT:
-            if right_thigh.tip_start().y >= left_thigh.tip_start().y:
+            if right_thigh.tip_end().y > left_thigh.tip_end().y:
                 downfoot = Downfoot.RIGHT
                 downfoot_position.x = right_thigh.tip_end().x
                 calculate_positions_from_downfoot()
         elif downfoot == Downfoot.RIGHT:
-            if left_thigh.tip_start().y >= right_thigh.tip_start().y:
+            if left_thigh.tip_end().y > right_thigh.tip_end().y:
                 downfoot = Downfoot.LEFT
                 downfoot_position.x = left_thigh.tip_end().x
                 calculate_positions_from_downfoot()
         render_to_canvas()
-        annotate(str(pose_idx))
+        if str(poses[pose_idx][0]):
+            annotate(str(poses[pose_idx][0]))
 
     # save
     bbox = canvas.convert("RGB").getbbox()  # so stupid, getbbox doesn't work on RGBA
