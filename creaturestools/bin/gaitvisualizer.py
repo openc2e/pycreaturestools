@@ -5,6 +5,7 @@ import creaturestools.sprites
 import enum
 import collections
 import PIL.Image
+import PIL.ImageDraw
 
 # gait idx 0 13141516R - normal
 # gait idx 2 78798081R - tired
@@ -124,6 +125,12 @@ class Vec2:
         return Vec2(self.x - other.x, self.y - other.y)
     def __repr__(self):
         return "({}, {})".format(self.x, self.y)
+    def __getitem__(self, i):
+        if i == 0:
+            return self.x
+        if i == 1:
+            return self.y
+        raise NotImplementedError(i)
     def tuple(self):
         return (self.x, self.y)
 
@@ -279,6 +286,7 @@ def main():
     canvas = PIL.Image.new("RGBA", size=(5000, 5000)) # TODO: how big?
     # canvas.putpalette(creaturestools.sprites.CREATURES1_PALETTE)
     canvas.paste((0, 0, 0, 255), (0, 0, canvas.width, canvas.height))
+    draw = PIL.ImageDraw.Draw(canvas)
 
     # helper functions
     def set_sprites(pose_string):
@@ -340,6 +348,17 @@ def main():
         render_rect((0, 0, 128, 255), right_thigh.next.next.start_absolute())
         render_rect((0, 0, 255, 255), right_thigh.next.next.end_absolute())
 
+    def annotate(text):
+        # get bounds
+        upper_left_corner = body.position
+        for part in (head, left_thigh, right_thigh, left_arm, right_arm):
+            while part:
+                upper_left_corner = Vec2(min(upper_left_corner.x, part.position.x), min(upper_left_corner.y, part.position.y))
+                part = part.next
+
+        # add text
+        draw.text(upper_left_corner, text, fill=(255, 255, 255, 255))
+
     def render_rect(color, start):
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
@@ -351,6 +370,7 @@ def main():
     set_sprites(poses[0])
     calculate_positions_from_body()
     render_to_canvas()
+    annotate("0")
     
     # figure out the initial downfoot
     if left_thigh.tip_start().y > right_thigh.tip_start().y:
@@ -360,7 +380,7 @@ def main():
         downfoot = Downfoot.RIGHT
         downfoot_position = right_thigh.tip_end()
 
-    for i in range(1, len(poses) * 2):
+    for i in range(1, len(poses) + 1):
         pose_idx = i % len(poses)
         # shift down, generate next pose
         downfoot_position += Vec2(0, 75)
@@ -378,6 +398,7 @@ def main():
                 downfoot_position.x = left_thigh.tip_end().x
                 calculate_positions_from_downfoot()
         render_to_canvas()
+        annotate(str(pose_idx))
 
 
     # save
