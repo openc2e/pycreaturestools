@@ -766,11 +766,11 @@ class CBiochemistry:
         for _ in range(num_emitters):
             self.emitters.append(self.Emitter.read_from(ar))
 
-        print(vars(self))
-
         self.receptors = []
         for _ in range(num_receptors):
             self.receptors.append(self.Receptor.read_from(ar))
+
+        print(vars(self))
 
         self.reactions = []
         for _ in range(num_reactions):
