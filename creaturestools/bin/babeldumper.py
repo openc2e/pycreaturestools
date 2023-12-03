@@ -25,7 +25,7 @@ def main():
                 messages.append((timestamp, parse_netbabel_client_message(r)))
 
     messages = sorted(messages, key=lambda _: _[0])
-    for (ts, msg) in messages:
+    for ts, msg in messages:
         print("{} {}".format(ts.isoformat(), msg))
 
 

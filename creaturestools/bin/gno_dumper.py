@@ -20,7 +20,6 @@ def read_u32le(f):
 
 
 def parse_rtf(s):
-
     out = ""
 
     p = 0

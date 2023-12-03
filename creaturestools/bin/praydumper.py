@@ -32,7 +32,6 @@ def main():
     convert_images = args.convert_images
     convert_music = args.convert_music
     for input_filename in args.files:
-
         filename_root = os.path.basename(os.path.splitext(input_filename)[0])
         output_directory = filename_root
 

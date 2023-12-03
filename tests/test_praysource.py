@@ -7,7 +7,6 @@ from creaturestools.praysource import *
 
 class TestPraySource(unittest.TestCase):
     def test_parse_pray_source(self):
-
         source = """
         
         "en-GB"

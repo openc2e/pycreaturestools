@@ -1,7 +1,7 @@
 import json
 import sys
 
-from ..genetics import *
+from creaturestools.genetics import *
 
 
 class MyEncoder(json.JSONEncoder):

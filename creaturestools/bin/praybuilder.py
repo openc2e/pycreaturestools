@@ -127,7 +127,7 @@ def main():
 
         raise FileNotFoundError(filename)
 
-    for (block_type, block_name, data) in blocks:
+    for block_type, block_name, data in blocks:
         print(f'block {block_type} "{block_name}"')
     loadedblocks = pray_load_file_references(blocks, fileloaderfunc)
 

@@ -167,7 +167,7 @@ def write_pray_file(fname_or_stream, blocks, compression=zlib.Z_DEFAULT_COMPRESS
     with open_if_not_stream(fname_or_stream, "wb") as f:
         write_all(f, b"PRAY")
 
-        for (block_type, block_name, data) in blocks:
+        for block_type, block_name, data in blocks:
             write_all(f, block_type.encode("ascii"))
             write_all(f, (block_name + (128 - len(block_name)) * "\0").encode("cp1252"))
 

@@ -224,9 +224,9 @@ class CGallery:
             x = read8(f)  # TODO
             # apparently this is 4 inside eden obj #370, a blackboard
             # apparently this is 5 inside eden obj #552, a blackboard
-            assert (
-                x == 0 or x == 1 or x == 4 or x == 5
-            ), "CGallery framedata 3rd byte was " + str(x)
+            assert x == 0 or x == 1 or x == 4 or x == 5, (
+                "CGallery framedata 3rd byte was " + str(x)
+            )
 
             data["width"] = read32(f)
             data["height"] = read32(f)

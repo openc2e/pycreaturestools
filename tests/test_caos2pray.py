@@ -7,7 +7,6 @@ from creaturestools.caos2pray import *
 
 class TestCaos2PraySource(unittest.TestCase):
     def test_parse_caos2pray_source(self):
-
         s = """
 **CAOS2PRAY
 *# Pray-File "Snakey.agents"

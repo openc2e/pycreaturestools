@@ -411,7 +411,6 @@ def read_gen3_file(fname_or_stream):
 
         genes = []
         while True:
-
             unknown_data = b""
             while peek_exact(f, 4) not in (b"gene", b"gend"):
                 unknown_data += read_exact(f, 1)

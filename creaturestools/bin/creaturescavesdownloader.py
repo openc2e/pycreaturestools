@@ -19,7 +19,7 @@ class MyHTMLParser(html.parser.HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag.lower() != "a":
             return
-        for (name, value) in attrs:
+        for name, value in attrs:
             if name.lower() != "href":
                 continue
             self.hrefs.append(value)
@@ -35,7 +35,6 @@ def main():
         "https://www.creaturescaves.com/downloads.php?game=C1&species=&sortBy=ID&searchFor=&section=Creatures",
         "https://www.creaturescaves.com/downloads.php?game=C2&species=&sortBy=ID&searchFor=&section=Creatures",
     ):
-
         for page in itertools.count(1):
             url = f"{main_url}&page={page}"
             print(f"Getting {url}")

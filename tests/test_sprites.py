@@ -29,7 +29,7 @@ class TestSprites(unittest.TestCase):
         sprite1.seek(0)
         images1 = read_func(sprite1)
 
-        for (rand_img, img1) in zip(random_images, images1):
+        for rand_img, img1 in zip(random_images, images1):
             self.assertEqual(rand_img.width, img1.width)
             self.assertEqual(rand_img.height, img1.height)
             if "rawmode" in img1.info:

@@ -176,12 +176,12 @@ def read_pcap_file(fname_or_stream):
 
     newstreams = {}
     # TCP streams: sort, validate sequence numbers, and remove duplicates
-    for (stream_key, packets) in streams.items():
+    for stream_key, packets in streams.items():
         packets = sorted(packets, key=lambda _: (_[1], -len(_[2])))
         newpackets = []
         last_sequence_number = None
         last_data = None
-        for (ts, seq, data) in packets:
+        for ts, seq, data in packets:
             if last_sequence_number is None:
                 pass
             elif last_sequence_number == seq:

@@ -12,7 +12,7 @@ def stitch_c1_image(images):
     if len(images) == 1 and images[0].width == 8352 and images[0].height == 1200:
         # Creatures 1 background, don't stitch
         return images[0]
-    return stitch_to_sheet(images)
+    return stitch_to_atlas(images)
 
 
 def stitch_c2_image(images):
@@ -62,7 +62,10 @@ def main():
                                 fname
                             )
                         )
-                        image = stitch_to_sheet(images)
+                        image = stich_to_atlas(images)
+                        # image = stitch_to_sheet(images)
+                else:
+                    image = stitch_to_sheet(images)
             else:
                 image = stitch_c1_image(read_spr_file(fname, palette=palette))
         else:

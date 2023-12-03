@@ -5,94 +5,7 @@ import re
 import struct
 import sys
 
-
-class MFCReader:
-    def __init__(self, f):
-        self._f = f
-        self._classmap = {}
-        self._objects = [None]
-
-    def register_class(self, name, klass):
-        assert name not in self._classmap
-        self._classmap[name] = klass
-
-    def peek(self):
-        return self._f.peek()
-
-    def read(self, n):
-        result = self._f.read(n)
-        assert len(result) == n
-        return result
-
-    def read_s8(self):
-        return struct.unpack("<b", self.read(1))[0]
-
-    def read_u8(self):
-        return struct.unpack("<B", self.read(1))[0]
-
-    def read_u16le(self):
-        return struct.unpack("<H", self.read(2))[0]
-
-    def read_s32le(self):
-        return struct.unpack("<i", self.read(4))[0]
-
-    def read_u32le(self):
-        return struct.unpack("<I", self.read(4))[0]
-
-    def read_string(self):
-        length = self.read_u8()
-        if length == 0xFF:
-            length = self.read_u16le()
-            if length == 0xFFFF:
-                length = self.read_u32le()
-        return self.read(length)
-
-    def read_object(self, class_requested=None):
-        tag = self.read_u16le()
-        if tag == 0x7FFF:
-            # 32-bit tag
-            raise NotImplementedError('32-bit "big" tag')
-        if tag == 0:
-            return None
-        elif tag == 0xFFFF:
-            # new class description
-            schema_number = self.read_u16le()
-            classname_length = self.read_u16le()
-            classname = self.read(classname_length).decode("ascii")
-            # print(f"{schema_number=} {classname_length=} {classname=}")
-
-            if classname not in self._classmap:
-                raise NotImplementedError(
-                    'Found new class "{}", but don\'t know how to deserialize it'.format(
-                        classname
-                    )
-                )
-
-            # print('Found new class "{}"'.format(classname))
-            self._objects.append(self._classmap[classname])
-            # print("Giving it PID {}".format(len(self._objects) - 1))
-
-            val = self._classmap[classname]()
-            # print('Found object of type "{}"'.format(classname))
-            self._objects.append(val)
-            # print("Giving it PID {}".format(len(self._objects) - 1))
-            val.read(self)
-            return val
-        elif tag & 0x8000:
-            # existing class
-            tag = tag & ~0x8000
-            # print("Found object of existing class {}".format(tag))
-            assert len(self._objects) >= tag
-            val = self._objects[tag]()
-            self._objects.append(val)
-            # print("Giving it PID {}".format(len(self._objects) - 1))
-            val.read(self)
-            return val
-        else:
-            # existing object
-            # print("Reference to existing object with PID {}".format(tag))
-            assert len(self._objects) >= tag
-            return self._objects[tag]
+from creaturestools.mfc import MFCReader
 
 
 def as_ref(obj):
@@ -194,27 +107,38 @@ class MapData:
         )
 
 
+class Image:
+    pass
+
+
 class CGallery:
     def read(self, ar):
         num_images = ar.read_u32le()
         self.filename = filename = ar.read(4).decode("ascii")
         self.first_sprite = ar.read_u32le()
-        num_references = ar.read_u32le()
-        # print(
-        #     f'CGallery(num_images={num_images} filename="{filename}" first_sprite={self.first_sprite} num_references={num_references})'
-        # )
+        self.num_refs = ar.read_u32le()
+        self.images = []
+        print(
+            f'CGallery(num_images={num_images} filename="{filename}" first_sprite={self.first_sprite} num_refs={self.num_refs})'
+        )
         for _ in range(num_images):
-            parent = ar.read_object("CGallery")
-            status = ar.read_u8()
-            width = ar.read_u32le()
-            height = ar.read_u32le()
-            offset = ar.read_u32le()
-            # print(
-            #     f"Image(parent=... status={status} width={width} height={height} offset={offset})"
-            # )
+            i = Image()
+            i.parent = ar.read_object("CGallery")
+            i.status = ar.read_u8()
+            i.width = ar.read_u32le()
+            i.height = ar.read_u32le()
+            i.offset = ar.read_u32le()
+            self.images.append(i)
+            print(
+                f"Image(parent=... status={i.status} width={i.width} height={i.height} offset={i.offset})"
+            )
 
     def __json__(self):
-        return dict(filename=self.filename, first_sprite=self.first_sprite)
+        return dict(
+            filename=self.filename,
+            first_sprite=self.first_sprite,
+            num_refs=self.num_refs,
+        )
 
 
 OBJECT_UNID_COUNTER = 1
@@ -428,13 +352,25 @@ class Vehicle(CompoundObject):
 class Lift(Vehicle):
     def read(self, ar):
         Vehicle.read(self, ar)
-        num_floors = ar.read_u32le()
-        next_or_current_floor = ar.read_u32le()
-        current_call_button = ar.read_s32le()
-        delay_counter = ar.read_u8()
+        self.num_floors = ar.read_u32le()
+        self.next_or_current_floor = ar.read_u32le()
+        self.current_call_button = ar.read_s32le()
+        self.delay_counter = ar.read_u8()
+        self.floors = []
         for _ in range(8):
             floor_y = ar.read_u32le()
             floor_callbutton = ar.read_object("CallButton")
+            self.floors.append({"y": floor_y, "callbutton": floor_callbutton})
+
+    def __json__(self):
+        return dict(
+            **Vehicle.__json__(self),
+            num_floors=self.num_floors,
+            next_or_current_floor=self.next_or_current_floor,
+            current_call_button=self.current_call_button,
+            delay_counter=self.delay_counter,
+            floors=self.floors,
+        )
 
 
 class Entity:
@@ -555,14 +491,24 @@ class Body(Entity):
         angle = ar.read_u32le()
         view = ar.read_u32le()
 
+        # body_data = []
+        # for i in range(6):
+        #     val = []
+        #     for j in range(10):
+        #         x = ar.read_u8()
+        #         y = ar.read_u8()
+        #         val.append((x, y))
+        #     body_data.append(val)
+
         body_data = []
+        for j in range(10):
+            body_data.append([])
+
         for i in range(6):
-            val = []
             for j in range(10):
                 x = ar.read_u8()
                 y = ar.read_u8()
-                val.append((x, y))
-            body_data.append(val)
+                body_data[j].append((x, y))
 
         print(vars())
 
@@ -575,6 +521,11 @@ class Limb(Entity):
             self.endx = ar.read_u8()
             self.endy = ar.read_u8()
 
+        def __repr__(self):
+            return "LimbData({} {}, {} {})".format(
+                self.startx, self.starty, self.endx, self.endy
+            )
+
     def read(self, ar):
         Entity.read(self, ar)
 
@@ -585,11 +536,15 @@ class Limb(Entity):
         for _ in range(10):
             val = self.LimbData()
             val.read(ar)
-            limbdata.append(limbdata)
-
-        next_limb = ar.read_object("Limb")
+            limbdata.append(val)
 
         print(vars())
+        for _ in limbdata:
+            print(
+                "{:>2} {:>2}    {:>2} {:>2}".format(_.startx, _.starty, _.endx, _.endy)
+            )
+
+        next_limb = ar.read_object("Limb")
 
 
 class CBrain:
@@ -606,6 +561,9 @@ class CBrain:
                 neurons.append(self.Neuron())
                 neurons[-1].read(ar)
 
+    def __json__(self):
+        return vars(self)
+
     class SVRule:
         @classmethod
         def from_read(cls, ar):
@@ -617,7 +575,6 @@ class CBrain:
             self.data = ar.read(10)
 
         def __repr__(self):
-
             svrules = {
                 0: "blank",
                 1: "const0",
@@ -786,6 +743,9 @@ class CBrain:
 
 
 class CBiochemistry:
+    def __json__(self):
+        return vars(self)
+
     def read(self, ar):
         self.owner = ar.read_object("Creature")
 
@@ -796,6 +756,11 @@ class CBiochemistry:
         self.chemicals = []
         for _ in range(256):
             self.chemicals.append(self.ChemicalData.read_from(ar))
+
+        print("CHEMICALS HERE")
+        for i, c in enumerate(self.chemicals):
+            print(i, c)
+        print()
 
         self.emitters = []
         for _ in range(num_emitters):
@@ -810,6 +775,11 @@ class CBiochemistry:
         self.reactions = []
         for _ in range(num_reactions):
             self.reactions.append(self.Reaction.read_from(ar))
+
+        print("REACTIONS HERE")
+        for r in self.reactions:
+            print(r)
+        print()
 
     class ChemicalData:
         @classmethod
@@ -910,12 +880,15 @@ class CInstinct:
 class Creature(Object):
     class CreatureVocabWord:
         def read(self, ar):
-            self.in_ = ar.read_string()
-            self.out = ar.read_string()
+            self.in_ = ar.read_string().decode("ascii")
+            self.out = ar.read_string().decode("ascii")
             self.strength = ar.read_u32le()
 
         def __repr__(self):
             return f"{{in={self.in_} out={self.out} strength={self.strength}}}"
+
+        def __json__(self):
+            return vars(self)
 
     class Stimulus:
         def read(self, ar):
@@ -932,6 +905,9 @@ class Creature(Object):
             self.chemical3 = ar.read_u8()
             self.amount3 = ar.read_u8()
 
+        def __json__(self):
+            return vars(self)
+
     class Goal:
         def read(self, ar):
             self.drives = []
@@ -941,65 +917,68 @@ class Creature(Object):
         def __repr__(self):
             return f"{self.drives}"
 
+        def __json__(self):
+            return vars(self)
+
     def read(self, ar):
         Object.read(self, ar)
 
-        moniker = ar.read(4)
-        mothers_moniker = ar.read(4)
-        fathers_moniker = ar.read(4)
+        self.moniker = ar.read(4).decode("ascii")
+        self.mothers_moniker = ar.read(4).decode("ascii")
+        self.fathers_moniker = ar.read(4).decode("ascii")
 
-        body = ar.read_object("Body")
-        head = ar.read_object("Limb")
-        left_thigh = ar.read_object("Limb")
-        right_thigh = ar.read_object("Limb")
-        left_arm = ar.read_object("Limb")
-        right_arm = ar.read_object("Limb")
-        tail = ar.read_object("Limb")
+        self.body = ar.read_object("Body")
+        self.head = ar.read_object("Limb")
+        self.left_thigh = ar.read_object("Limb")
+        self.right_thigh = ar.read_object("Limb")
+        self.left_arm = ar.read_object("Limb")
+        self.right_arm = ar.read_object("Limb")
+        self.tail = ar.read_object("Limb")
 
-        direction = ar.read_u8()
-        downfoot = ar.read_u8()
-        footx = ar.read_u32le()
-        footy = ar.read_u32le()
-        zorder = ar.read_u32le()
+        self.direction = ar.read_u8()
+        self.downfoot = ar.read_u8()
+        self.footx = ar.read_u32le()
+        self.footy = ar.read_u32le()
+        self.zorder = ar.read_u32le()
 
-        current_pose = ar.read_string()
-        expression = ar.read_u8()
-        eyes_open = ar.read_u8()
-        asleep = ar.read_u8()
+        self.current_pose = ar.read_string().decode("ascii")
+        self.expression = ar.read_u8()
+        self.eyes_open = ar.read_u8()
+        self.asleep = ar.read_u8()
 
-        poses = []
+        self.poses = []
         for _ in range(100):
-            poses.append(ar.read_string())
+            self.poses.append(ar.read_string().decode("ascii"))
 
-        gait_animations = []
+        self.gait_animations = []
         for _ in range(8):
-            gait_animations.append(ar.read_string())
+            self.gait_animations.append(ar.read_string().decode("ascii"))
 
-        vocabulary = []
+        self.vocabulary = []
         for _ in range(80):
-            vocabulary.append(self.CreatureVocabWord())
-            vocabulary[-1].read(ar)
+            self.vocabulary.append(self.CreatureVocabWord())
+            self.vocabulary[-1].read(ar)
 
-        remembered_object_positions = []
+        self.remembered_object_positions = []
         for _ in range(40):
             x = ar.read_u32le()
             y = ar.read_u32le()
-            remembered_object_positions.append((x, y))
+            self.remembered_object_positions.append((x, y))
 
-        stimuli = []
+        self.stimuli = []
         for _ in range(36):
-            stimuli.append(self.Stimulus())
-            stimuli[-1].read(ar)
+            self.stimuli.append(self.Stimulus())
+            self.stimuli[-1].read(ar)
 
         brain = ar.read_object("Brain")
         biochemistry = ar.read_object("Biochemistry")
 
         self.sex = ar.read_u8()
         self.age = ar.read_u8()
-        self.biological_tick = ar.read_u32le()
+        self.biotick = ar.read_u32le()
 
-        self.gamete = ar.read(4)
-        self.zygote = ar.read(4)
+        self.gamete = ar.read(4).decode("ascii")
+        self.zygote = ar.read(4).decode("ascii")
 
         self.dead = ar.read_u8()
         self.age_in_ticks = ar.read_u32le()
@@ -1015,9 +994,7 @@ class Creature(Object):
             self.goals.append(self.Goal())
             self.goals[-1].read(ar)
 
-        print(vars(self))
-
-        zzzz = ar.read_object("Object")
+        self.zzzz = ar.read_object("Object")
 
         # stars = ar.read_object("Object")
         # bubbles = ar.read_object("Object")
@@ -1027,28 +1004,28 @@ class Creature(Object):
         # voice_lookup = ar.read(4 * 27 * 3)
         # voice_data = ar.read(8 * 32)
 
-        voice_lookup_table = []
+        self.voice_lookup_table = []
         for _ in range(27 * 3):
-            voice_lookup_table.append(ar.read_u32le())
-        voices = []
+            self.voice_lookup_table.append(ar.read_u32le())
+        self.voices = []
         for _ in range(32):
-            name = ar.read(4)
+            name = ar.read(4).decode("ascii")
             delay_ticks = ar.read_u32le()
-            voices.append((name, delay_ticks))
+            self.voices.append((name, delay_ticks))
 
-        self.history_moniker = ar.read_string()
-        self.history_name = ar.read_string()
-        self.history_moms_moniker = ar.read_string()
-        # self.history_moms_name = ar.read_string()
-        self.history_dads_moniker = ar.read_string()
-        # self.history_dads_name = ar.read_string()
-        self.history_birthday = ar.read_string()
-        self.history_birthplace = ar.read_string()
+        self.history_moniker = ar.read_string().decode("cp1252")
+        self.history_name = ar.read_string().decode("cp1252")
+        self.history_moms_moniker = ar.read_string().decode("cp1252")
+        # self.history_moms_name = ar.read_string().decode('cp1252')
+        self.history_dads_moniker = ar.read_string().decode("cp1252")
+        # self.history_dads_name = ar.read_string().decode('cp1252')
+        self.history_birthday = ar.read_string().decode("cp1252")
+        self.history_birthplace = ar.read_string().decode("cp1252")
 
-        self.history_owner_name = ar.read_string()
-        self.history_owner_phone = ar.read_string()
-        self.history_owner_address = ar.read_string()
-        self.history_owner_email = ar.read_string()
+        self.history_owner_name = ar.read_string().decode("cp1252")
+        self.history_owner_phone = ar.read_string().decode("cp1252")
+        self.history_owner_address = ar.read_string().decode("cp1252")
+        self.history_owner_email = ar.read_string().decode("cp1252")
         # self.history_state = ar.read_u16le()
         # self.history_gender = ar.read_u16le()
         # self.history_age_in_seconds = ar.read_u32le()
@@ -1058,6 +1035,9 @@ class Creature(Object):
         # padding ???
 
         # print(vars())
+
+    def __json__(self):
+        return {**Object.__json__(self), **vars(self)}
 
 
 class BufferReader:
@@ -1259,15 +1239,15 @@ def parse_genfile(f):
 
 class CGenome:
     def read(self, ar):
-        length_in_bytes = ar.read_u32le()
+        self.length_in_bytes = ar.read_u32le()
         self.moniker = ar.read(4)
         self.sex = ar.read_u32le()
         self.life_stage = ar.read_u8()
 
         print(vars(self))
 
-        data = ar.read(length_in_bytes)
-        self.genes = parse_genfile(BufferReader(data))
+        self.data = ar.read(self.length_in_bytes)
+        self.genes = parse_genfile(BufferReader(self.data))
 
         # r = MFCReader(BufferReader(data))
         #
@@ -1285,11 +1265,8 @@ class CGenome:
 def read_exp_file(ar):
     creature = ar.read_object("Creature")
     genome = ar.read_object("CGenome")
-    if creature.zygote != b"\x00\x00\x00\x00":
+    if creature.zygote != "\x00\x00\x00\x00":
         zygote = ar.read_object("CGenome")
-    # TODO: assert eof
-    # zygote = ar.read_object("CGenome")
-
     assert ar.peek() == b""
 
 
@@ -1309,16 +1286,20 @@ def read_sfc_file(ar):
     print(pretty(map))
 
     num_objects = ar.read_u32le()
+    objects = []
     for _ in range(num_objects):
         obj = ar.read_object("Object")
         print(pretty(obj))
+        objects.append(obj)
         # print(MyJSONEncoder().encode(obj, indent=1))
         # exit()
 
     num_sceneries = ar.read_u32le()
+    sceneries = []
     for _ in range(num_sceneries):
         scen = ar.read_object("Scenery")
         print(pretty(scen))
+        sceneries.append(scen)
 
     num_scripts = ar.read_u32le()
     for _ in range(num_scripts):
@@ -1346,9 +1327,11 @@ def read_sfc_file(ar):
         speechhistory_text = ar.read_string()
 
     num_macros = ar.read_u32le()
+    macros = []
     for _ in range(num_macros):
         macro = ar.read_object("Macro")
         print(pretty(macro))
+        macros.append(macro)
 
     num_deathrow = ar.read_u32le()
     for _ in range(num_deathrow):
@@ -1381,6 +1364,80 @@ def read_sfc_file(ar):
     num_stuffed_norns = ar.read_u32le()
     for _ in range(num_stuffed_norns):
         stuffed_norn = ar.read_object("Creature")
+
+    print()
+    print("World")
+    print("├─ Map sprite={}".format(map.background.filename))
+    print("|  ├─ Roomdata")
+    print("|  ├─ Groundlevel")
+    print("|  └─ Bacteria")
+    for o in objects:
+        children = []
+        if o.current_sound_filename:
+            children.append(o.current_sound_filename)
+        for m in macros:
+            if m.ownr == o:
+                children.append(m)
+        if isinstance(o, SimpleObject):
+            print(
+                "├─ {} uid={} sprite={} frame={} x={} y={} z={}".format(
+                    type(o).__name__,
+                    o._unid,
+                    o.gallery.filename,
+                    o.part.current_sprite,
+                    o.part.x,
+                    o.part.y,
+                    o.part.zorder,
+                )
+            )
+        if isinstance(o, CompoundObject):
+            print(
+                "├─ {} uid={} sprite={} x={} y={}".format(
+                    type(o).__name__,
+                    o._unid,
+                    o.gallery.filename,
+                    o.parts[0]["part"].x,
+                    o.parts[0]["part"].y,
+                )
+            )
+            for p in o.parts:
+                children.append(p)
+
+        for i, c in enumerate(children):
+            start = "|  {}".format("├─" if i < len(children) - 1 else "└─")
+            if isinstance(c, str):
+                print("{} LoopingSound name={}".format(start, c))
+
+            if isinstance(c, Macro):
+                print(
+                    "{} Macro script={}{}".format(
+                        start, c.script[:100], "..." if len(c.script) > 100 else ""
+                    )
+                )
+
+            if isinstance(c, dict):
+                p = c
+                print(
+                    "{} CompoundPart frame={} relx={} rely={} zorder={}".format(
+                        start,
+                        p["part"].current_sprite,
+                        p["relx"],
+                        p["rely"],
+                        p["part"].zorder,
+                    )
+                )
+
+    for s in sceneries:
+        print(
+            "├─ Scenery uid={} sprite={} frame={} x={} y={} z={}".format(
+                s._unid,
+                s.gallery.filename,
+                s.part.current_sprite,
+                s.part.x,
+                s.part.y,
+                s.part.zorder,
+            )
+        )
 
 
 def main():

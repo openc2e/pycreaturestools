@@ -46,7 +46,7 @@ def generate_pray_source(blocks, filenamefilter=lambda name, data: name):
     pray_source += '"en-GB"\n\n'
 
     data_blocks = []
-    for (block_type, block_name, data) in blocks:
+    for block_type, block_name, data in blocks:
         if isinstance(data, bytes):
             # save these for the end
             data_blocks.append((block_type, block_name, data))
@@ -76,7 +76,7 @@ def generate_pray_source(blocks, filenamefilter=lambda name, data: name):
                 pray_source += f'"{_escape(key)}" "{_escape(value)}"\n'
         pray_source += "\n"
 
-    for (block_type, block_name, data) in sorted(
+    for block_type, block_name, data in sorted(
         data_blocks, key=lambda _: (_[0].lower(), _natural_sort_key(_[1]))
     ):
         if isinstance(data, pathlib.Path):
